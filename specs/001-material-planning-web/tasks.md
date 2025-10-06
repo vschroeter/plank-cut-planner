@@ -9,75 +9,75 @@ Conventions
 - Test-first where applicable; write failing tests before implementation
 
 ## Phase 3.1: Setup
-- [ ] T001 Ensure dependencies: add @vueuse/core, vitest, @vue/test-utils, jsdom
+- [X] T001 Ensure dependencies: add @vueuse/core, vitest, @vue/test-utils, jsdom
   - Files: `C:\Users\schoc\Documents\Git\Wildau\material-planner\package.json`
   - Add deps: `@vueuse/core`, `vitest`, `@vue/test-utils`, `jsdom`
   - Add script: "test": "vitest --run", "test:watch": "vitest"
-- [ ] T002 Create Vitest config
+- [X] T002 Create Vitest config
   - File: `C:\Users\schoc\Documents\Git\Wildau\material-planner\vitest.config.ts`
   - jsdom environment, alias `@` to `src`, include `.vue` transform
-- [ ] T003 [P] Create test setup file
+- [X] T003 [P] Create test setup file
   - File: `C:\Users\schoc\Documents\Git\Wildau\material-planner\src\tests\setup.ts`
   - Configure Vuetify and global stubs for tests
-- [ ] T004 [P] Create shared domain types
+- [X] T004 [P] Create shared domain types
   - File: `C:\Users\schoc\Documents\Git\Wildau\material-planner\src\types\planner.ts`
   - Define `PlankSKU`, `RequiredPiece`, `GlobalSettings`, `PurchasePlanItem`, `CutAssignment`, `CutPlan`
 
 ## Phase 3.2: Tests First (TDD)
-- [ ] T005 [P] Unit test: sorting of Available Planks
+- [X] T005 [P] Unit test: sorting of Available Planks
   - File: `C:\Users\schoc\Documents\Git\Wildau\material-planner\tests\unit\stores\planner.sort.spec.ts`
   - Assert sort by width asc, then length asc, then price asc
-- [ ] T006 [P] Unit test: persistence with useLocalStorage
+- [X] T006 [P] Unit test: persistence with useLocalStorage
   - File: `C:\Users\schoc\Documents\Git\Wildau\material-planner\tests\unit\stores\planner.persist.spec.ts`
   - Assert state rehydrates after store re-initialization
-- [ ] T007 [P] Unit test: tie-breaker logic (fewest SKUs, then fewest cuts)
+- [X] T007 [P] Unit test: tie-breaker logic (fewest SKUs, then fewest cuts)
   - File: `C:\Users\schoc\Documents\Git\Wildau\material-planner\tests\unit\services\optimizer.tiebreak.spec.ts`
-- [ ] T008 [P] Unit test: orientation constraint and kerf spacing
+- [X] T008 [P] Unit test: orientation constraint and kerf spacing
   - File: `C:\Users\schoc\Documents\Git\Wildau\material-planner\tests\unit\services\optimizer.orientation.spec.ts`
-- [ ] T009 [P] Integration test: user story happy-path compute and visualization presence
+- [X] T009 [P] Integration test: user story happy-path compute and visualization presence
   - File: `C:\Users\schoc\Documents\Git\Wildau\material-planner\tests\integration\app.happy.spec.ts`
   - Load `src/pages/index.vue`, enter sample data, assert purchase plan table and cut plan appear
-- [ ] T010 [P] Integration test: unsatisfiable demand shows clear error with blocking constraints
+- [X] T010 [P] Integration test: unsatisfiable demand shows clear error with blocking constraints
   - File: `C:\Users\schoc\Documents\Git\Wildau\material-planner\tests\integration\app.unsatisfiable.spec.ts`
-- [ ] T011 [P] Unit test: unit conversion and formatting rules
+- [X] T011 [P] Unit test: unit conversion and formatting rules
   - File: `C:\Users\schoc\Documents\Git\Wildau\material-planner\tests\unit\composables\useUnits.spec.ts`
 
 ## Phase 3.3: Core Implementation
-- [ ] T012 Implement Pinia planner store with persisted state
+- [X] T012 Implement Pinia planner store with persisted state
   - File: `C:\Users\schoc\Documents\Git\Wildau\material-planner\src\stores\planner.ts`
   - State: availablePlanks, requiredPieces, settings
   - Persistence: VueUse `useLocalStorage` inside store declaration
   - Getters: sortedAvailablePlanks, purchasePlan, cutPlan, totalCuts
   - Actions: add/update/remove rows; setSawKerf; setUnitSystem; computePlans; toggle auto-recompute
-- [ ] T013 Implement optimization service with constraints and tie-breaker
+- [X] T013 Implement optimization service with constraints and tie-breaker
   - File: `C:\Users\schoc\Documents\Git\Wildau\material-planner\src\services\optimizer.ts`
   - Inputs: store state; Outputs: PurchasePlan, CutPlan, totalCuts; enforce availability caps; orientation; kerf spacing; tie-break
-- [ ] T014 [P] Implement unit conversion composable
+- [X] T014 [P] Implement unit conversion composable
   - File: `C:\Users\schoc\Documents\Git\Wildau\material-planner\src\composables\useUnits.ts`
   - Convert mm <-> inches; formatting per spec
-- [ ] T015 [P] Implement utility: sort helpers
+- [X] T015 [P] Implement utility: sort helpers
   - File: `C:\Users\schoc\Documents\Git\Wildau\material-planner\src\lib\sorting.ts`
   - Compare by width, then length, then price
-- [ ] T016 [P] Implement validation utilities
+- [X] T016 [P] Implement validation utilities
   - File: `C:\Users\schoc\Documents\Git\Wildau\material-planner\src\lib\validation.ts`
   - Validate dimensions > 0, quantities integer ≥ 1, availability null or integer ≥ 0
 
 ## Phase 3.4: UI Components (Vuetify)
-- [ ] T017 Available Planks table (editable, add/remove, auto-sort)
+- [X] T017 Available Planks table (editable, add/remove, auto-sort)
   - File: `C:\Users\schoc\Documents\Git\Wildau\material-planner\src\components\AvailablePlanksTable.vue`
-- [ ] T018 [P] Required Pieces table (editable, add/remove)
+- [X] T018 [P] Required Pieces table (editable, add/remove)
   - File: `C:\Users\schoc\Documents\Git\Wildau\material-planner\src\components\RequiredPiecesTable.vue`
-- [ ] T019 [P] Global Settings card (kerf, unit toggle, auto-recompute toggle, timing)
+- [X] T019 [P] Global Settings card (kerf, unit toggle, auto-recompute toggle, timing)
   - File: `C:\Users\schoc\Documents\Git\Wildau\material-planner\src\components\GlobalSettingsCard.vue`
-- [ ] T020 [P] Purchase Plan table (SKU, dims, price, quantity, subtotal, totals)
+- [X] T020 [P] Purchase Plan table (SKU, dims, price, quantity, subtotal, totals)
   - File: `C:\Users\schoc\Documents\Git\Wildau\material-planner\src\components\PurchasePlanTable.vue`
-- [ ] T021 [P] Cut Plan visualization (SVG) with kerf spacing and labels/hover details
+- [X] T021 [P] Cut Plan visualization (SVG) with kerf spacing and labels/hover details
   - File: `C:\Users\schoc\Documents\Git\Wildau\material-planner\src\components\CutPlanView.vue`
-- [ ] T022 [P] Compute status/error bar (unsatisfiable explanations, performance, manual compute button)
+- [X] T022 [P] Compute status/error bar (unsatisfiable explanations, performance, manual compute button)
   - File: `C:\Users\schoc\Documents\Git\Wildau\material-planner\src\components\ComputeStatusBar.vue`
 
 ## Phase 3.5: Page Integration
-- [ ] T023 Integrate components into index page with responsive layout
+- [X] T023 Integrate components into index page with responsive layout
   - File: `C:\Users\schoc\Documents\Git\Wildau\material-planner\src\pages\index.vue`
   - Use Vuetify grid; persist and restore state; wire to store actions
 
