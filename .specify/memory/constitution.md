@@ -1,50 +1,70 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!--
+Sync Impact Report
+- Version change: 0.0.0 → 1.0.0
+- Modified principles:
+  - [PRINCIPLE_1_NAME] → Visual Design and Theming
+  - [PRINCIPLE_2_NAME] → Accessibility AA Compliance
+  - [PRINCIPLE_3_NAME] → Performance Budgets
+  - [PRINCIPLE_4_NAME] → Responsive & Mobile‑first
+  - [PRINCIPLE_5_NAME] → Component‑Driven Architecture & Type Safety
+- Added sections:
+  - Technology & UX Standards
+  - Development Workflow & Quality Gates
+  - Governance
+- Removed sections: None
+- Templates requiring updates:
+  - .specify/templates/plan-template.md ⚠ pending
+  - .specify/templates/spec-template.md ⚠ pending
+  - .specify/templates/tasks-template.md ⚠ pending
+  - .specify/templates/commands/*.md ⚠ pending
+- Follow-up TODOs:
+  - TODO(RATIFICATION_DATE): Original adoption date unknown; set upon ratification.
+-->
+
+# Material Planner Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### Visual Design and Theming
+- MUST use Vuetify 3 design tokens with a single source of truth in `src/styles/settings.scss`.
+- MUST provide light and dark themes; default to system preference and ensure WCAG AA contrast.
+- MUST apply consistent spacing scale, typography (Roboto), and icons (Material Design Icons).
+Rationale: Enforces a modern, cohesive look that is easily themeable and maintainable.
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### Responsive & Mobile‑first
+- MUST implement mobile‑first layouts with responsive breakpoints for 360–1920px viewports.
+- MUST ensure touch targets are ≥ 44px and avoid horizontal scroll on standard breakpoints.
+- MUST validate layouts on latest Chrome (two latest stable versions).
+Rationale: Delivers a consistent experience across devices and input methods.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### Component‑Driven Architecture & Type Safety
+- MUST use Vue 3 with TypeScript in strict mode; avoid `any` and unsafe casts.
+- MUST use Pinia for state management and Vue Router for navigation.
+- MUST favor composables and presentational/container separation for reusability.
+- MUST cover core composables and critical components with unit tests.
+Rationale: Improves maintainability, correctness, and reuse.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+## Technology & UX Standards
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+- Stack: Vue 3, Vuetify 3, TypeScript, Vite, Pinia, Vue Router, VueUse/core.
+- Styling: Centralize theme tokens in `src/styles/settings.scss`; avoid inline layout styles.
+- Fonts & Icons: `@fontsource/roboto` and `@mdi/font` are the canonical sources.
+- Internationalization: Not mandated initially; additions MUST not block layout or performance budgets.
+- Browser Support: Latest two stable versions of Chrome, and Edge.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+## Development Workflow & Quality Gates
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
-
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+- Linting and type checks MUST pass (`eslint`, `vue-tsc`) before merge.
+- CI MUST run unit tests and automated accessibility checks on PRs.
+- Each PR MUST include a checklist referencing these principles and any performance budget impacts.
+- Releases MUST note changes that affect principles or governance.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+- This constitution supersedes other local conventions where conflicts arise.
+- Amendments MUST be proposed via PR, include a migration/impact note, and update the version and dates below.
+- Versioning policy: Semantic — MAJOR for breaking governance/principle changes; MINOR for new/expanded sections; PATCH for clarifications.
+- Compliance reviews SHOULD occur at least quarterly and at each release candidate.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Version**: 1.0.0 | **Ratified**: TODO(RATIFICATION_DATE) | **Last Amended**: 2025-10-06
