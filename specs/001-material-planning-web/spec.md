@@ -69,14 +69,20 @@ As a planner of wood projects, I want to input available plank options from a ha
 
 9. **Given** I toggle the unit system between Metric (mm) and Inches, **When** I switch units, **Then** all inputs, outputs, and the visualization reflect the chosen units with correct value conversion and formatting rules (mm: show 1 decimal place only when needed; otherwise integer; inches: decimals).
 10. **Given** I set a preferred unit system, **When** I refresh the page, **Then** my unit preference persists.
+11. **Given** I have previously entered data for Available Planks and Required Pieces, **When** I load the app, **Then** the purchase plan and cut plan are computed immediately without manual action.
+12. **Given** the cut plan visualization is shown, **When** I compare planks, **Then** each purchased plank is rendered in a fixed-height row with width proportional to its length, maintaining aspect ratio; cuts are drawn correctly inside each plank respecting kerf and non-rotation.
+13. **Given** I select a currency in Global Settings, **When** I view price fields and totals, **Then** they display with the selected currency symbol (default Euro €) and the choice persists across reloads.
+11. **Given** there are at least two purchase plans with the same total cost, **When** the system selects one, **Then** it selects the plan with fewer total cuts; if still tied, the plan with fewer purchased planks.
+11. **Given** I add duplicate Available Planks, **When** duplicates share an ArticleNr, **Then** they merge into one row, availability is summed, and if the price differs the price is updated to the latest provided value.
+12. **Given** I add duplicate Available Planks without ArticleNr, **When** they share identical (Width, Length, Price), **Then** they merge into one row and availability is summed. Rows with same dimensions but different prices remain separate offers.
 
 ### Edge Cases
 - Unlimited availability: Available Pieces left blank is treated as unlimited; any non-blank must be a non-negative integer.
-- Duplicate SKUs (same ArticleNr): The system either merges or warns [NEEDS CLARIFICATION: merge duplicates vs. allow duplicates].
+- Duplicate SKUs: Merge by ArticleNr when present; otherwise merge by (Width, Length, Price). Sum availability. If the same ArticleNr appears with a different price, update the SKU's price to the latest provided value. Identical dimensions with different prices remain separate offers.
 - Required piece larger than any single plank dimension: The system flags as unsatisfiable with guidance.
 - Zero or negative inputs: Inputs must validate and be rejected with inline feedback.
 - Decimals and formatting: Support decimal values for dimensions and kerf; in mm, show up to 1 decimal only when needed; inches displayed as decimals; 1 decimal place for inches.
-- Tie-breaking: Multiple equally cheap purchase plans may exist [NEEDS CLARIFICATION: tie-break rule e.g., fewer SKUs, fewer cuts].
+- Tie-breaking: When multiple plans have the same lowest total cost, choose the plan with the fewest cuts; if still tied, choose the plan with the fewest purchased planks.
 - Orientation: Pieces cannot rotate 90° relative to length/width; cuts are length-wise only (orthogonal to the long side).
 - Computation trigger: Auto-recompute on every valid input change. Measure recompute duration; if any recompute exceeds 1.0s, disable further auto-recomputes until explicitly re-enabled or a manual compute is performed.
 - Unit switching and rounding: Values convert between mm and inches; preserve value fidelity on round-trip.
@@ -99,10 +105,21 @@ As a planner of wood projects, I want to input available plank options from a ha
 - **FR-013**: Validate inputs with inline feedback (e.g., negative or zero dimensions, invalid numbers) and prevent computation until valid.
 - **FR-014**: If the requirements cannot be satisfied (due to size or availability), present a clear error with which pieces are unfulfillable.
 - **FR-015**: Orientation constraint: Pieces cannot rotate 90°; cuts are length-wise only (orthogonal to the long side).
-- **FR-016**: Handle ties in total cost deterministically [NEEDS CLARIFICATION: tie-break criterion].
+- **FR-016**: Handle ties in total cost deterministically: among equal-cost plans, minimize number of cuts; if still tied, minimize number of purchased planks.
 - **FR-017**: Allow clearing all data to return to defaults with a single action and confirm before destructive clear.
 - **FR-018**: Support unit system toggle between Metric (millimeters) and Inches across all inputs, outputs, and visualization. Default to Metric (mm).
 - **FR-019**: Display formatting rules: In Metric (mm), show a decimal with 1 place only when the value is non-integer; otherwise show an integer. In Inches, display decimals (not fractions); 1 decimal place for inches. Persist the user's chosen unit system.
+ - **FR-020**: Provide a persistent sticky footer ("Compute bar") visible on all screens containing: a "Compute" action, an Auto-Compute toggle, and a "Last computed <time>" display. While a computation is running, show a visible in-progress indicator in the footer.
+ - **FR-021**: Footer responsiveness: On narrow/mobile viewports render a compact layout (icons only for actions/status); on desktop show expanded labels and status text. All controls remain accessible in both modes.
+ - **FR-022**: Expose recomputation execution time and the control to re-enable Auto-Compute after performance lockout (see FR-012) in the sticky footer alongside the Compute action and Auto-Compute toggle.
+ - **FR-023**: ArticleNr is optional in "Available Planks". Merge duplicates by ArticleNr when present (sum availability; if price differs, update to the latest provided value). If ArticleNr is blank, merge duplicates only when (Width, Length, Price) are identical; otherwise treat as separate offers.
+ - **FR-024**: Cut Plan scaling/layout: Render each purchased plank in a fixed-height row; horizontally scale length to width proportionally, maintaining aspect ratio. Draw cuts within the rectangle respecting kerf and orientation.
+ - **FR-025**: Global Settings include Currency with default Euro ("€"); the selected currency persists and is used to format all price cells and totals throughout the app.
+ - **FR-026**: Price input/display cells automatically show the selected currency symbol next to values.
+ - **FR-027**: "Add" actions in tables use a "+" icon; no "Add" text required.
+ - **FR-028**: On app load, if any persisted table data exists, compute purchase and cut plans immediately without manual action.
+ - **FR-029**: Right sidebar for Global Settings: persistent collapsible drawer anchored to the right; default open on desktop, default closed on mobile; includes a visible toggle control and retains state across navigation within the session.
+ - **FR-023**: ArticleNr is optional in "Available Planks". Merge duplicates by ArticleNr when present (sum availability; if price differs, update to the latest provided value). If ArticleNr is blank, merge duplicates only when (Width, Length, Price) are identical; otherwise treat as separate offers.
 
 ## Clarifications
 
@@ -112,10 +129,16 @@ As a planner of wood projects, I want to input available plank options from a ha
 - Q: For Inches display, decimals or fractions? → A: Decimals.
 - Q: What units and precision should all dimensions and kerf use? → A: Allow switching between Metric (mm) and Inches. Default to Metric (mm) with decimals; for mm, show 1 decimal place only when needed; otherwise show integers.
 - Q: What is the default saw kerf? → A: 3 mm.
+ - Q: How should the sticky footer behave and what controls should it include? → A: Always-visible sticky footer; compact on mobile (icons only), expanded on desktop; includes Compute action, Auto-Compute toggle, and "Last computed <time>". Show a visible in-progress indicator while computation runs.
+ - Q: Cut plan rectangles scaling and layout? → A: Scale each plank to fit a fixed-height row; maintain aspect ratio across rows.
+ - Q: How to identify and handle duplicate Available Planks when ArticleNr may be blank? → A: Merge by ArticleNr when present; otherwise merge by (Width, Length, Price). Sum availability. If ArticleNr repeats with a new price, update to the latest price.
+ - Q: What is the deterministic tie-break rule for equal-cost plans? → A: Minimize number of cuts; then minimize number of purchased planks.
+ - Q: Right sidebar for Global Settings behavior? → A: Persistent collapsible drawer on the right; default open on desktop, closed on mobile.
 
 ### Key Entities *(include if feature involves data)*
 - **PlankSKU (Available Plank)**: Represents a purchasable plank from the store.
-  - Attributes: Width, Length, Price Per Piece, ArticleNr, Available Pieces (nullable/unlimited), Derived Area (informational)
+  - Attributes: Width, Length, Price Per Piece, ArticleNr (optional), Available Pieces (nullable/unlimited), Derived Area (informational)
+  - Identity & merge: Use ArticleNr if present; otherwise use composite (Width, Length, Price) for duplicate merge. Sum availability; latest price wins for same ArticleNr.
 - **RequiredPiece**: Represents a desired output piece.
   - Attributes: Width, Length, Quantity (Pieces), Comment
 - **GlobalSettings**: Represents app-wide configuration.
