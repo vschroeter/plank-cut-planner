@@ -3,7 +3,7 @@
     app
     height="40"
   >
-    <a
+    <!-- <a
       v-for="item in items"
       :key="item.title"
       class="d-inline-block mx-2 social-link"
@@ -16,27 +16,36 @@
         :icon="item.icon"
         :size="item.icon === '$vuetify' ? 24 : 16"
       />
-    </a>
+    </a> -->
 
-    <div
-      class="text-caption text-disabled"
-      style="position: absolute; right: 16px;"
-    >
-      &copy; 2016-{{ (new Date()).getFullYear() }} <span class="d-none d-sm-inline-block">Vuetify, LLC</span>
-      —
-      <a
-        class="text-decoration-none on-surface"
-        href="https://vuetifyjs.com/about/licensing/"
-        rel="noopener noreferrer"
-        target="_blank"
-      >
-        MIT License
-      </a>
-    </div>
+    <v-spacer />
+    <span>{{ statusText }}</span>
+    <v-switch v-model="auto" class="mx-5" hide-details label="Auto" />
+    <v-btn :disabled="store.autoRecompute" size="small" @click="store.computePlans()">Compute</v-btn>
+
+    <v-spacer />
   </v-footer>
 </template>
 
 <script setup lang="ts">
+
+  import { computed } from 'vue'
+  import { usePlannerStore } from '@/stores/planner'
+  const store = usePlannerStore()
+
+  const hasData = computed(() => store.availablePlanks.length > 0 && store.requiredPieces.length > 0)
+  const type = computed(() => (hasData.value ? 'info' : 'warning'))
+  const statusText = computed(() => {
+    const ms = store.computeMs ?? null
+    const last = store.lastComputedAt ? new Date(store.lastComputedAt).toLocaleTimeString() : '—'
+    const perf = ms == null ? 'Not computed yet' : `Last ${ms}ms @ ${last}`
+    return store.autoRecompute ? perf : `${perf} • Auto disabled (>1.0s)`
+  })
+  const auto = computed({
+    get: () => store.autoRecompute,
+    set: (v: boolean) => store.toggleAutoRecompute(v),
+  })
+
   const items = [
     {
       title: 'Vuetify Documentation',

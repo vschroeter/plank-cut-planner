@@ -1,16 +1,111 @@
-export interface PlankSKU {
+export class PlankDimension {
   widthMm: number
   lengthMm: number
-  pricePerPiece: number
-  articleNr: string | null
-  availablePieces: number | null
-  // derived informational area
-  areaMm2?: number
+
+  constructor ({ widthMm = 0, lengthMm = 0 }: { widthMm?: number, lengthMm?: number }) {
+    this.widthMm = widthMm
+    this.lengthMm = lengthMm
+  }
+
+  get hash () {
+    return this.widthMm + ',' + this.lengthMm
+  }
 }
 
-export interface RequiredPiece {
-  widthMm: number
-  lengthMm: number
+export class AvailablePlank extends PlankDimension {
+  pricePerPiece: number
+  articleNr: string | null
+
+  constructor ({ widthMm = 0, lengthMm = 0, pricePerPiece = 0, articleNr = null }: { widthMm?: number, lengthMm?: number, pricePerPiece?: number, articleNr?: string | null }) {
+    super({ widthMm, lengthMm })
+    this.articleNr = articleNr
+    this.pricePerPiece = pricePerPiece
+  }
+
+  // get hash() {
+  //   return this.widthMm + ',' + this.lengthMm + ',' + this.pricePerPiece + ',' + this.articleNr
+  // }
+}
+
+// A real world plank
+export class Plank extends PlankDimension {
+  availablePlank: AvailablePlank
+
+  pieces: PlankPiece[]
+
+  constructor ({ availablePlank, pieces = [] }: { availablePlank: AvailablePlank, pieces?: PlankPiece[] }) {
+    super({ widthMm: availablePlank.widthMm, lengthMm: availablePlank.lengthMm })
+    this.availablePlank = availablePlank
+    this.pieces = pieces
+
+    for (const p of this.pieces) {
+      p.plank = this
+    }
+  }
+
+  get lengthMmLeft () {
+    let lengthMmLeft = this.availablePlank.lengthMm
+    for (const piece of this.pieces) {
+      lengthMmLeft -= piece.lengthMm
+      lengthMmLeft -= piece.cutWidthMm
+    }
+    return lengthMmLeft
+  }
+
+  get hash () {
+    return this.availablePlank.hash + '(' + this.pieces.reduce((acc, p) => acc + p.lengthMm, 0) + ')'
+  }
+
+  copy () {
+    return new Plank({ availablePlank: this.availablePlank, pieces: [...this.pieces] })
+  }
+}
+
+export class PlankPiece extends PlankDimension {
+  cutWidthMm: number
+  plank: Plank
+
+  constructor ({ widthMm = 0, lengthMm = 0, cutWidthMm = 0, plank }: { widthMm?: number, lengthMm?: number, cutWidthMm?: number, plank: Plank }) {
+    super({ widthMm, lengthMm })
+    this.cutWidthMm = cutWidthMm
+    this.plank = plank
+    this.plank.pieces.push(this)
+  }
+}
+
+export class PlankStorage {
+  availablePlankAmount: Map<Plank, number | null>
+
+  constructor () {
+    this.availablePlankAmount = new Map()
+  }
+
+  get hash () {
+    return Array.from(this.availablePlankAmount.entries()).map(([plank, amount]) => plank.hash + ',' + amount).join('|')
+  }
+
+  get availablePlanks () {
+    return Array.from(this.availablePlankAmount.entries()).filter(([plank, amount]) => amount === null || amount > 0).map(([plank, amount]) => plank)
+  }
+
+  copy () {
+    const copy = new PlankStorage()
+    copy.availablePlankAmount = new Map(this.availablePlankAmount)
+    return copy
+  }
+
+  addPlank (plank: Plank) {
+    const amount = this.availablePlankAmount.get(plank) ?? null
+    this.availablePlankAmount.set(plank, amount === null ? null : amount + 1)
+  }
+
+  removePlank (plank: Plank) {
+    const amount = this.availablePlankAmount.get(plank) ?? null
+    this.availablePlankAmount.set(plank, amount === null ? null : amount - 1)
+  }
+}
+
+export interface RequiredPiece extends PlankPiece {
   quantity: number
   comment?: string | null
 }
@@ -22,31 +117,25 @@ export interface GlobalSettings {
 }
 
 export interface PurchasePlanItem {
-  articleNr: string | null
-  widthMm: number
-  lengthMm: number
-  unitPrice: number
+  plank: Plank
   quantity: number
-  subtotal: number
 }
 
 export interface CutAssignment {
-  articleNr: string | null
+  plank: Plank
   pieceIds: string[]
   cutPositionsMm: number[]
 }
 
-export interface CutPlanItem {
-  source: PlankSKU
-  assignments: CutAssignment[]
-}
+// export interface CutPlanItem {
+//   source: PlankSKU
+//   assignments: CutAssignment[]
+// }
 
-export interface CutPlan {
-  items: CutPlanItem[]
-  totalCost: number
-  totalCuts: number
-}
+// export interface CutPlan {
+//   items: CutPlanItem[]
+//   totalCost: number
+//   totalCuts: number
+// }
 
-export type PieceIdentity = string
-
-
+export type PieceIdentity = string // hash of width, length, source articleNr, ordinal

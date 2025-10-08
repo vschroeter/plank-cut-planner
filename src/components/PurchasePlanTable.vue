@@ -22,12 +22,21 @@ const headers = [
   { title: 'Subtotal', key: 'subtotalFmt' },
 ]
 
-const rows = computed(() => store.purchasePlan.map(p => ({
-  ...p,
-  unitPriceFmt: formatCurrency(p.unitPrice, store.settings.currency),
-  subtotalFmt: formatCurrency(p.subtotal, store.settings.currency),
-})))
-const total = computed(() => store.purchasePlan.reduce((s, p) => s + p.subtotal, 0))
+const rows = computed(() => store.purchasePlan.map(item => {
+  const plank = item.plank
+  const sku = plank.availablePlank
+  const unitPrice = sku.pricePerPiece
+  const subtotal = unitPrice * item.quantity
+  return {
+    articleNr: sku.articleNr,
+    widthMm: sku.widthMm,
+    lengthMm: sku.lengthMm,
+    quantity: item.quantity,
+    unitPriceFmt: formatCurrency(unitPrice, store.settings.currency),
+    subtotalFmt: formatCurrency(subtotal, store.settings.currency),
+  }
+}))
+const total = computed(() => store.purchasePlan.reduce((s, item) => s + item.quantity * item.plank.availablePlank.pricePerPiece, 0))
 defineExpose({ formatCurrency })
 </script>
 
