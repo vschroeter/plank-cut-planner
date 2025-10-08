@@ -17,6 +17,10 @@ describe('optimizer orientation & kerf', () => {
 
     // 400 + 5 + 400 = 805 <= 1000 → feasible without rotation
     expect(result.cutPlan.items[0].assignments.length).toBeGreaterThan(0)
+    // Deterministic totals
+    expect(result.purchasePlan[0]?.quantity).toBe(1)
+    expect(result.cutPlan.totalCuts).toBe(1)
+    expect(result.cutPlan.totalCost).toBe(10)
   })
 })
 

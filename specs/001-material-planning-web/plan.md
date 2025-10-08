@@ -1,8 +1,8 @@
 
 # Implementation Plan: Material Planning and Cut Optimization
 
-**Branch**: `001-material-planning-web` | **Date**: 2025-10-06 | **Spec**: `C:\Users\schoc\Documents\Git\Wildau\material-planner\specs\001-material-planning-web\spec.md`
-**Input**: Feature specification from `C:\Users\schoc\Documents\Git\Wildau\material-planner\specs\001-material-planning-web\spec.md`
+**Branch**: `001-material-planning-web` | **Date**: 2025-10-08 | **Spec**: C:\Users\schoc\Documents\Git\Privat\plank-cut-planner\specs\001-material-planning-web\spec.md
+**Input**: Feature specification from `C:\Users\schoc\Documents\Git\Privat\plank-cut-planner\specs\001-material-planning-web\spec.md`
 
 ## Execution Flow (/plan command scope)
 ```
@@ -31,27 +31,26 @@
 - Phase 3-4: Implementation execution (manual or via tools)
 
 ## Summary
-Plan a Vue 3 + Vuetify web app that computes the cheapest set of store planks to buy to fulfill required piece dimensions with saw kerf, and visualizes the cut plan. Global state uses Pinia with VueUse `useLocalStorage` directly in the Pinia store declarations for persistence. UI is built with Vuetify components. Duplicates (same `ArticleNr`) are allowed. When multiple cheapest plans exist, tie-break by the smallest number of SKUs, then by the smallest number of cuts. Show the total number of cuts in the UI.
+Web app to compute the cheapest plank purchase plan and a cut plan (no 90° rotation; cuts along length), with local persistence. UI: Vue 3 + TypeScript + Vuetify 3; state: Pinia + VueUse; visualization: SVG. Target <1.0s recompute; disable auto‑recompute if exceeded.
 
 ## Technical Context
-**Language/Version**: Vue 3 with TypeScript (strict)  
-**Primary Dependencies**: Vuetify 3, Pinia 3, Vue Router 4, VueUse/core  
-**Storage**: LocalStorage via VueUse `useLocalStorage` inside Pinia stores  
-**Testing**: Type checks via `vue-tsc`; unit tests planned with Vitest + @vue/test-utils for core composables/components  
-**Target Platform**: Web (latest Chrome and Edge)  
-**Project Type**: Single web application (frontend only)  
-**Performance Goals**: Recompute plan on change; if any recompute exceeds 1.0s, auto-recompute turns off and manual compute is required  
-**Constraints**: Persist data across reloads; responsive/mobile-first UI; WCAG AA contrast  
-**Scale/Scope**: Single-page app with several views/sections
+**Language/Version**: TypeScript (Vue 3)  
+**Primary Dependencies**: Vue 3, Vuetify 3, Pinia, Vue Router, @vueuse/core  
+**Storage**: Local browser storage via VueUse `useLocalStorage`  
+**Testing**: Vitest, @vue/test-utils, jsdom  
+**Target Platform**: Web (latest Chrome/Edge)
+**Project Type**: Single frontend project  
+**Performance Goals**: Recompute under 1.0s; auto‑recompute disables if exceeded  
+**Constraints**: No rotation; cuts along length; availability caps; unit toggle mm/inch; currency display  
+**Scale/Scope**: Small datasets (tens of SKUs, hundreds of pieces)
 
 ## Constitution Check
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-- Visual Design/Theming: Use Vuetify 3 tokens and centralize in `src/styles/settings.scss`. Light/dark themes and WCAG AA — PASS
-- Responsive & Mobile‑first: Use Vuetify grid and breakpoints; validate 360–1920px — PASS
-- Component‑Driven & Type Safety: Vue 3 + TypeScript strict, Pinia for state, composables — PASS
-- Technology Standards: Stack matches constitution; fonts/icons via `@fontsource/roboto` and `@mdi/font` — PASS
-- Workflow & Quality Gates: Lint/type checks before merge; plan for unit tests — PASS
+- Visual Design & Theming: Vuetify 3 tokens in `src/styles/settings.scss`. PASS
+- Responsive & Mobile‑first: Vuetify grid; 360–1920px; touch targets ≥44px. PASS
+- Component‑Driven & Type Safety: Vue 3 + TS strict; Pinia; composables. PASS
+- Workflow & Quality Gates: eslint/vue-tsc; Vitest in CI. PASS
 
 ## Project Structure
 
@@ -109,7 +108,8 @@ ios/ or android/
 └── [platform-specific structure: feature modules, UI flows, platform tests]
 ```
 
-**Structure Decision**: Single frontend project. Feature docs live under `specs\\001-material-planning-web`. State lives in `src\\stores` (Pinia + VueUse). UI uses Vuetify components in `src\\components`, pages in `src\\pages`.
+**Structure Decision**: [Document the selected structure and reference the real
+directories captured above]
 
 ## Phase 0: Outline & Research
 1. **Extract unknowns from Technical Context** above:
@@ -163,7 +163,7 @@ ios/ or android/
    - Keep under 150 lines for token efficiency
    - Output to repository root
 
-**Output**: data-model.md, /contracts/*, quickstart.md, agent-specific file
+**Output**: data-model.md, /contracts/*, failing tests, quickstart.md, agent-specific file
 
 ## Phase 2: Task Planning Approach
 *This section describes what the /tasks command will do - DO NOT execute during /plan*
@@ -207,7 +207,7 @@ ios/ or android/
 **Phase Status**:
 - [x] Phase 0: Research complete (/plan command)
 - [x] Phase 1: Design complete (/plan command)
-- [ ] Phase 2: Task planning complete (/plan command - describe approach only)
+- [x] Phase 2: Task planning complete (/plan command - describe approach only)
 - [ ] Phase 3: Tasks generated (/tasks command)
 - [ ] Phase 4: Implementation complete
 - [ ] Phase 5: Validation passed

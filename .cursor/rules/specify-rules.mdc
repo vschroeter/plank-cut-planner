@@ -1,9 +1,11 @@
-# material-planner Development Guidelines
+﻿# material-planner Development Guidelines
 
 Auto-generated from all feature plans. Last updated: 2025-10-06
 
 ## Active Technologies
 - Vue 3 with TypeScript (strict) + Vuetify 3, Pinia 3, Vue Router 4, VueUse/core (001-material-planning-web)
+- TypeScript (Vue 3) + Vue 3, Vuetify 3, Pinia, Vue Router, @vueuse/core (001-material-planning-web)
+- Local browser storage via VueUse `useLocalStorage` (001-material-planning-web)
 
 ## Project Structure
 ```
@@ -19,6 +21,7 @@ npm test; npm run lint
 Vue 3 with TypeScript (strict): Follow standard conventions
 
 ## Recent Changes
+- 001-material-planning-web: Added TypeScript (Vue 3) + Vue 3, Vuetify 3, Pinia, Vue Router, @vueuse/core
 - 001-material-planning-web: Added Vue 3 with TypeScript (strict) + Vuetify 3, Pinia 3, Vue Router 4, VueUse/core
 
 <!-- MANUAL ADDITIONS START -->

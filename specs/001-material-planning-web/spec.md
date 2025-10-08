@@ -121,6 +121,14 @@ As a planner of wood projects, I want to input available plank options from a ha
  - **FR-029**: Right sidebar for Global Settings: persistent collapsible drawer anchored to the right; default open on desktop, default closed on mobile; includes a visible toggle control and retains state across navigation within the session.
  - **FR-023**: ArticleNr is optional in "Available Planks". Merge duplicates by ArticleNr when present (sum availability; if price differs, update to the latest provided value). If ArticleNr is blank, merge duplicates only when (Width, Length, Price) are identical; otherwise treat as separate offers.
 
+ - **FR-030**: In the Cut Plan visualization, clicking a piece segment toggles its Done state. Done pieces must be visually distinct from not-done pieces.
+ - **FR-031**: Provide a "Reset All" control within the Cut Plan view to clear all Done states at once.
+ - **FR-032**: Display each piece’s length as an in-rect label and show a tooltip with length and width (with unit) on hover/focus. Formatting follows unit rules in FR-019.
+ - **FR-033**: Persist Done states locally and preserve them across recomputes and reloads when the piece identity (hash of width, length, source articleNr, ordinal) is stable. Only the explicit Reset All clears persisted Done states. If a piece no longer exists after recompute, its Done state is discarded.
+  - **FR-034**: Done pieces render with a green hatch overlay pattern while retaining original fill and outline for contrast and accessibility.
+  - **FR-035**: Each source plank in the visualization displays only its width and length (unit-formatted) as a label and provides a tooltip with the same two values.
+  - **FR-036**: Piece Done toggle and tooltips may be pointer-only; keyboard activation and focusability are not required.
+
 ## Clarifications
 
 ### Session 2025-10-06
@@ -134,6 +142,15 @@ As a planner of wood projects, I want to input available plank options from a ha
  - Q: How to identify and handle duplicate Available Planks when ArticleNr may be blank? → A: Merge by ArticleNr when present; otherwise merge by (Width, Length, Price). Sum availability. If ArticleNr repeats with a new price, update to the latest price.
  - Q: What is the deterministic tie-break rule for equal-cost plans? → A: Minimize number of cuts; then minimize number of purchased planks.
  - Q: Right sidebar for Global Settings behavior? → A: Persistent collapsible drawer on the right; default open on desktop, closed on mobile.
+
+### Session 2025-10-08
+- Q: How should “cut part done” status persist and behave when the plan recomputes? → A: Persist across reloads and across recomputes when piece identity is stable; only cleared via explicit Reset All.
+ - Q: How is “piece identity” defined for persistence? → A: Hash of piece attributes and assigned source plank (width, length, articleNr, ordinal).
+ - Q: How should Done pieces visually differ? → A: Green hatch pattern overlay; keep original fill.
+ - Q: What should piece tooltip show? → A: Length and width (with unit).
+ - Q: What information should each source plank display? → A: Width and length only.
+ - Q: Should toggling Done and tooltips be keyboard-accessible? → A: No; pointer-only is acceptable.
+ - Q: Is ArticleNr required for Available Planks? → A: No. ArticleNr is optional and may be left blank.
 
 ### Key Entities *(include if feature involves data)*
 - **PlankSKU (Available Plank)**: Represents a purchasable plank from the store.

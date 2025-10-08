@@ -6,7 +6,7 @@
 - widthMm: number (mm)
 - lengthMm: number (mm)
 - pricePerPiece: number (currency)
-- articleNr: string
+- articleNr: string | null (optional)
 - availablePieces: number | null (null = unlimited)
 - derived: areaMm2 (number; informational)
 
@@ -28,9 +28,10 @@ Validation:
 ### GlobalSettings
 - sawKerfMm: number (default 3)
 - unitSystem: 'mm' | 'inch' (default 'mm')
+- currency: string (default '€')
 
 ### PurchasePlanItem
-- articleNr: string
+- articleNr: string | null
 - widthMm: number
 - lengthMm: number
 - unitPrice: number
@@ -47,6 +48,10 @@ Validation:
 - totalCost: number
 - totalCuts: number
 
+### PieceIdentity & Done State
+- pieceIdentity: string (hash of width, length, source articleNr, ordinal)
+- donePieces: Record<string, boolean> (persisted; true when piece is marked Done)
+
 ## Units & Formatting
 - Internally store in mm. Convert for display when unitSystem is 'inch'. Preserve value fidelity on toggles.
 
@@ -55,6 +60,7 @@ State:
 - availablePlanks: PlankSKU[] (persisted)
 - requiredPieces: RequiredPiece[] (persisted)
 - settings: GlobalSettings (persisted)
+- donePieces: Record<string, boolean> (persisted)
 
 Getters:
 - sortedAvailablePlanks
@@ -66,7 +72,10 @@ Actions:
 - addPlank, updatePlank, removePlank
 - addRequiredPiece, updateRequiredPiece, removeRequiredPiece
 - setSawKerf, setUnitSystem
+- setCurrency
 - computePlans (auto/manual depending on mode)
+- markPieceDone(pieceIdentity: string, done: boolean)
+- resetAllDone()
 
 Constraints:
 - Orientation: no 90° rotation; cuts along length only.

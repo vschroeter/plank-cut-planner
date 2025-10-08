@@ -27,5 +27,6 @@ pnpm dev
 
 ## Notes
 - Auto-recompute is enabled until a compute exceeds 1.0s; then manual compute is required until re-enabled.
-- Duplicates (same `ArticleNr`) are allowed.
-- Tie-break: fewest SKUs, then fewest cuts; total cuts are displayed in the UI.
+- Duplicate handling: Merge by ArticleNr when present (sum availability; latest price wins if changed). If ArticleNr blank, merge only when (Width, Length, Price) are identical.
+- Tie-break: fewest cuts; if still tied, fewest purchased planks. Total cuts are displayed in the UI.
+- ArticleNr is optional; leave blank if unknown.

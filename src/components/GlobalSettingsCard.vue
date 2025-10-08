@@ -9,8 +9,11 @@
         <v-col cols="12" sm="4">
           <v-select :items="units" v-model="unit" label="Units" />
         </v-col>
-        <v-col cols="12" sm="4" class="d-flex align-center">
-          <v-switch v-model="auto" label="Auto recompute" />
+        <v-col cols="12" sm="4">
+          <v-text-field v-model="currency" label="Currency" maxlength="3" />
+        </v-col>
+        <v-col cols="12" class="d-flex align-center">
+          <v-switch v-model="auto" label="Auto recompute" inset />
         </v-col>
       </v-row>
       <v-btn class="mt-2" @click="store.computePlans()" :disabled="auto">Compute Now</v-btn>
@@ -36,6 +39,11 @@ const unit = computed({
 const auto = computed({
   get: () => store.autoRecompute,
   set: (v: boolean) => store.toggleAutoRecompute(v),
+})
+
+const currency = computed({
+  get: () => store.settings.currency,
+  set: (v: string) => store.setCurrency(v || '€'),
 })
 </script>
 

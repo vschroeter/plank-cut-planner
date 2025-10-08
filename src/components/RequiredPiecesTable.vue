@@ -5,13 +5,13 @@
       <v-form @submit.prevent="onAdd">
         <v-row dense>
           <v-col cols="12" sm="3">
-            <v-text-field v-model.number="form.widthMm" label="Width (mm)" type="number" min="1" required />
+            <v-text-field v-model.number="form.widthMm" label="Width (mm)" type="number" min="1" :error-messages="widthErrors" />
           </v-col>
           <v-col cols="12" sm="3">
-            <v-text-field v-model.number="form.lengthMm" label="Length (mm)" type="number" min="1" required />
+            <v-text-field v-model.number="form.lengthMm" label="Length (mm)" type="number" min="1" :error-messages="lengthErrors" />
           </v-col>
           <v-col cols="12" sm="3">
-            <v-text-field v-model.number="form.quantity" label="Quantity" type="number" min="1" required />
+            <v-text-field v-model.number="form.quantity" label="Quantity" type="number" min="1" :error-messages="qtyErrors" />
           </v-col>
           <v-col cols="12" sm="2">
             <v-text-field v-model="form.comment" label="Comment" />
@@ -66,6 +66,10 @@ function onAdd(): void {
 function remove(index: number): void {
   store.removeRequiredPiece(index)
 }
+
+const widthErrors = computed(() => (form.widthMm > 0 ? [] : ['Must be > 0']))
+const lengthErrors = computed(() => (form.lengthMm > 0 ? [] : ['Must be > 0']))
+const qtyErrors = computed(() => (Number.isInteger(form.quantity) && form.quantity >= 1 ? [] : ['Integer ≥ 1']))
 </script>
 
 

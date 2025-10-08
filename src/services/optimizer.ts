@@ -30,8 +30,8 @@ export function computeOptimalPlan(input: ComputeInput): ComputeResult {
   const pieceCount = requiredPieces.reduce((sum, p) => sum + p.quantity, 0)
   if (pieceCount === 0) return { purchasePlan: [], cutPlan, totalCuts: 0 }
 
-  // Compute per SKU how many planks needed, naive packing along length
-  const needsBySku = new Map<string, { plank: PlankSKU; count: number; cuts: number }>()
+  // Compute per SKU piece counts and pairing capability for simple deterministic packing
+  const needsBySku = new Map<string, { plank: PlankSKU; pieces: number; canPair: boolean }>()
 
   const piecesExpanded = requiredPieces.flatMap(p => Array.from({ length: p.quantity }, () => ({ widthMm: p.widthMm, lengthMm: p.lengthMm })))
 
@@ -44,23 +44,16 @@ export function computeOptimalPlan(input: ComputeInput): ComputeResult {
     }
 
     const key = candidate.articleNr + '|' + candidate.lengthMm + '|' + candidate.widthMm
-    const current = needsBySku.get(key) ?? { plank: candidate, count: 0, cuts: 0 }
-    // naive: each additional piece on same plank along length if possible, else add new plank
-    // we assume two pieces per plank if fits: piece.length + kerf + piece.length <= plank.length
     const canTwo = piece.lengthMm * 2 + kerf <= candidate.lengthMm
-    if (canTwo) {
-      // group by pairs
-      current.count += 0.5
-      current.cuts += 1
-    } else {
-      current.count += 1
-      current.cuts += 0
-    }
+    const current = needsBySku.get(key) ?? { plank: candidate, pieces: 0, canPair: true }
+    current.pieces += 1
+    current.canPair = current.canPair && canTwo
     needsBySku.set(key, current)
   }
 
-  for (const { plank, count, cuts } of needsBySku.values()) {
-    const quantity = Math.ceil(count)
+  for (const { plank, pieces, canPair } of needsBySku.values()) {
+    const quantity = canPair ? Math.ceil(pieces / 2) : pieces
+    const cuts = canPair ? Math.max(0, pieces - quantity) : 0
     const subtotal = quantity * plank.pricePerPiece
     planItems.push({
       articleNr: plank.articleNr,

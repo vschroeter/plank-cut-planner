@@ -18,6 +18,9 @@ describe('optimizer tie-breaker', () => {
 
     expect(result.purchasePlan.length).toBe(1)
     expect(result.totalCuts).toBeGreaterThanOrEqual(1)
+    // Deterministic totals
+    expect(result.purchasePlan[0]?.quantity).toBe(1)
+    expect(result.cutPlan.totalCost).toBe(10)
   })
 })
 

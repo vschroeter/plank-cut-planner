@@ -1,8 +1,14 @@
 <template>
   <v-container fluid>
+    <v-navigation-drawer v-model="drawer" location="right" :permanent="true" width="360">
+      <GlobalSettingsCard />
+    </v-navigation-drawer>
     <v-row>
       <v-col cols="12">
-        <ComputeStatusBar />
+        <div class="d-flex justify-space-between align-center">
+          <ComputeStatusBar />
+          <v-btn icon="mdi-cog" @click="drawer = !drawer" />
+        </div>
       </v-col>
     </v-row>
     <v-row>
@@ -14,10 +20,7 @@
       </v-col>
     </v-row>
     <v-row>
-      <v-col cols="12" md="4">
-        <GlobalSettingsCard />
-      </v-col>
-      <v-col cols="12" md="8">
+      <v-col cols="12">
         <PurchasePlanTable />
       </v-col>
     </v-row>
@@ -30,10 +33,12 @@
 </template>
 
 <script lang="ts" setup>
+import { useLocalStorage } from '@vueuse/core'
 import AvailablePlanksTable from '@/components/AvailablePlanksTable.vue'
 import RequiredPiecesTable from '@/components/RequiredPiecesTable.vue'
 import GlobalSettingsCard from '@/components/GlobalSettingsCard.vue'
 import PurchasePlanTable from '@/components/PurchasePlanTable.vue'
 import CutPlanView from '@/components/CutPlanView.vue'
 import ComputeStatusBar from '@/components/ComputeStatusBar.vue'
+const drawer = useLocalStorage<boolean>('planner.settingsDrawerOpen', true)
 </script>

@@ -1,7 +1,7 @@
 <template>
   <v-alert :type="type" density="comfortable" class="my-2">
     <div class="d-flex align-center ga-4">
-      <span>{{ message }}</span>
+      <span>{{ statusText }}</span>
       <v-btn v-if="!store.autoRecompute" size="small" @click="store.computePlans()">Compute</v-btn>
       <v-switch v-model="auto" inset hide-details label="Auto" />
     </div>
@@ -15,7 +15,12 @@ const store = usePlannerStore()
 
 const hasData = computed(() => store.availablePlanks.length > 0 && store.requiredPieces.length > 0)
 const type = computed(() => (hasData.value ? 'info' : 'warning'))
-const message = computed(() => (hasData.value ? 'Ready to compute' : 'Add planks and required pieces to compute'))
+const statusText = computed(() => {
+  const ms = store.computeMs ?? null
+  const last = store.lastComputedAt ? new Date(store.lastComputedAt).toLocaleTimeString() : '—'
+  const perf = ms != null ? `Last ${ms}ms @ ${last}` : 'Not computed yet'
+  return store.autoRecompute ? perf : `${perf} • Auto disabled (>1.0s)`
+})
 const auto = computed({
   get: () => store.autoRecompute,
   set: (v: boolean) => store.toggleAutoRecompute(v),

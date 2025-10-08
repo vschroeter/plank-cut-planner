@@ -2,7 +2,7 @@ export interface PlankSKU {
   widthMm: number
   lengthMm: number
   pricePerPiece: number
-  articleNr: string
+  articleNr: string | null
   availablePieces: number | null
   // derived informational area
   areaMm2?: number
@@ -18,10 +18,11 @@ export interface RequiredPiece {
 export interface GlobalSettings {
   sawKerfMm: number
   unitSystem: 'mm' | 'inch'
+  currency: string
 }
 
 export interface PurchasePlanItem {
-  articleNr: string
+  articleNr: string | null
   widthMm: number
   lengthMm: number
   unitPrice: number
@@ -30,7 +31,7 @@ export interface PurchasePlanItem {
 }
 
 export interface CutAssignment {
-  articleNr: string
+  articleNr: string | null
   pieceIds: string[]
   cutPositionsMm: number[]
 }
@@ -45,5 +46,7 @@ export interface CutPlan {
   totalCost: number
   totalCuts: number
 }
+
+export type PieceIdentity = string
 
 

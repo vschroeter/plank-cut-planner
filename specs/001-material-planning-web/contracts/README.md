@@ -10,7 +10,7 @@ interface PlankSKU {
   widthMm: number;
   lengthMm: number;
   pricePerPiece: number;
-  articleNr: string;
+  articleNr?: string | null;
   availablePieces: number | null;
 }
 
@@ -24,13 +24,14 @@ interface RequiredPiece {
 interface GlobalSettings {
   sawKerfMm: number; // default 3
   unitSystem: 'mm' | 'inch';
+  currency: string; // default '€'
 }
 ```
 
 ```ts
 // Getters
 function sortedAvailablePlanks(): PlankSKU[];
-function purchasePlan(): Array<{ articleNr: string; widthMm: number; lengthMm: number; unitPrice: number; quantity: number; subtotal: number }>;
+function purchasePlan(): Array<{ articleNr: string | null; widthMm: number; lengthMm: number; unitPrice: number; quantity: number; subtotal: number }>;
 function cutPlan(): { items: Array<any>; totalCost: number; totalCuts: number };
 function totalCuts(): number;
 ```
@@ -47,8 +48,11 @@ function removeRequiredPiece(index: number): void;
 
 function setSawKerf(mm: number): void;
 function setUnitSystem(unit: 'mm' | 'inch'): void;
+function setCurrency(symbol: string): void;
 
 function computePlans(): void; // switches to manual mode when auto disabled
+function markPieceDone(pieceIdentity: string, done: boolean): void;
+function resetAllDone(): void;
 ```
 
 Validation rules align with `data-model.md`.
