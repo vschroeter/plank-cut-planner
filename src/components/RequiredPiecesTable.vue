@@ -2,7 +2,7 @@
   <v-card>
     <v-card-title>Required Pieces</v-card-title>
     <v-card-text>
-      <v-data-table :items="rows" :headers="headers" item-key="key" density="compact">
+      <v-data-table density="compact" :headers="headers" item-key="key" :items="rows">
         <template #top>
           <v-toolbar flat>
             <v-toolbar-title>
@@ -11,10 +11,10 @@
             </v-toolbar-title>
             <v-spacer />
             <v-btn
+              border
               class="me-2"
               prepend-icon="mdi-plus"
               rounded="lg"
-              border
               text="Add Piece"
               @click="add"
             />
@@ -37,28 +37,28 @@
           <v-col cols="12" sm="3">
             <v-text-field
               v-model.number="form.widthMm"
-              label="Width (mm)"
-              type="number"
-              min="1"
               :error-messages="widthErrors"
+              label="Width (mm)"
+              min="1"
+              type="number"
             />
           </v-col>
           <v-col cols="12" sm="3">
             <v-text-field
               v-model.number="form.lengthMm"
-              label="Length (mm)"
-              type="number"
-              min="1"
               :error-messages="lengthErrors"
+              label="Length (mm)"
+              min="1"
+              type="number"
             />
           </v-col>
           <v-col cols="12" sm="3">
             <v-text-field
               v-model.number="form.quantity"
-              label="Quantity"
-              type="number"
-              min="1"
               :error-messages="qtyErrors"
+              label="Quantity"
+              min="1"
+              type="number"
             />
           </v-col>
           <v-col cols="12" sm="3">
@@ -77,91 +77,92 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, ref } from 'vue'
-import { usePlannerStore } from '@/stores/planner'
-import { validateRequiredPiece } from '@/lib/validation'
+  import { computed, reactive, ref } from 'vue'
+  import { validateRequiredPiece } from '@/lib/validation'
+  import { usePlannerStore } from '@/stores/planner'
+  import { useUiStore } from '@/stores/ui'
 
-const store = usePlannerStore()
+  const store = usePlannerStore()
+  const ui = useUiStore()
 
-const headers = [
-  { title: 'Width (mm)', key: 'widthMm' },
-  { title: 'Length (mm)', key: 'lengthMm' },
-  { title: 'Qty', key: 'quantity' },
-  { title: 'Comment', key: 'comment' },
-  { title: '', key: 'actions', sortable: false },
-]
+  const headers = [
+    { title: 'Width (mm)', key: 'widthMm' },
+    { title: 'Length (mm)', key: 'lengthMm' },
+    { title: 'Qty', key: 'quantity' },
+    { title: 'Comment', key: 'comment' },
+    { title: '', key: 'actions', sortable: false },
+  ]
 
-const rows = computed(() => store.requiredPieces.map((p, i) => ({
-  ...p,
-  key: `${p.widthMm}-${p.lengthMm}-${i}`,
-  _idx: i,
-})))
+  const rows = computed(() => store.requiredPieces.map((p, i) => ({
+    ...p,
+    key: `${p.widthMm}-${p.lengthMm}-${i}`,
+    _idx: i,
+  })))
 
-const dialog = ref(false)
-const isEditing = ref(false)
-const editIndex = ref<number | null>(null)
+  const dialog = ref(false)
+  const isEditing = ref(false)
+  const editIndex = ref<number | null>(null)
 
-const form = reactive({
-  widthMm: 100 as number,
-  lengthMm: 400 as number,
-  quantity: 1 as number,
-  comment: '' as string,
-})
-
-function resetForm(): void {
-  form.widthMm = 100
-  form.lengthMm = 400
-  form.quantity = 1
-  form.comment = ''
-}
-
-function add(): void {
-  isEditing.value = false
-  editIndex.value = null
-  resetForm()
-  dialog.value = true
-}
-
-function edit(row: any): void {
-  isEditing.value = true
-  editIndex.value = row._idx
-  form.widthMm = row.widthMm
-  form.lengthMm = row.lengthMm
-  form.quantity = row.quantity
-  form.comment = row.comment ?? ''
-  dialog.value = true
-}
-
-function save(): void {
-  const errors = validateRequiredPiece({
-    widthMm: Number(form.widthMm),
-    lengthMm: Number(form.lengthMm),
-    quantity: Number(form.quantity),
+  const form = reactive({
+    widthMm: 100 as number,
+    lengthMm: 400 as number,
+    quantity: 1 as number,
+    comment: '' as string,
   })
-  if (errors.length > 0) return
 
-  const payload = {
-    widthMm: Number(form.widthMm),
-    lengthMm: Number(form.lengthMm),
-    quantity: Number(form.quantity),
-    comment: form.comment || null,
+  function resetForm (): void {
+    form.widthMm = ui.lastWidthMm ?? 100
+    form.lengthMm = 400
+    form.quantity = 1
+    form.comment = ''
   }
 
-  if (isEditing.value && editIndex.value !== null) {
-    store.updateRequiredPiece(editIndex.value, payload)
-  } else {
-    store.addRequiredPiece(payload)
+  function add (): void {
+    isEditing.value = false
+    editIndex.value = null
+    resetForm()
+    dialog.value = true
   }
-  dialog.value = false
-}
 
-function removeByIndex(index: number): void {
-  store.removeRequiredPiece(index)
-}
+  function edit (row: any): void {
+    isEditing.value = true
+    editIndex.value = row._idx
+    form.widthMm = row.widthMm
+    form.lengthMm = row.lengthMm
+    form.quantity = row.quantity
+    form.comment = row.comment ?? ''
+    dialog.value = true
+  }
 
-const widthErrors = computed(() => (form.widthMm > 0 ? [] : ['Must be > 0']))
-const lengthErrors = computed(() => (form.lengthMm > 0 ? [] : ['Must be > 0']))
-const qtyErrors = computed(() => (Number.isInteger(form.quantity) && form.quantity >= 1 ? [] : ['Integer ≥ 1']))
+  function save (): void {
+    const errors = validateRequiredPiece({
+      widthMm: Number(form.widthMm),
+      lengthMm: Number(form.lengthMm),
+      quantity: Number(form.quantity),
+    })
+    if (errors.length > 0) return
+
+    const payload = {
+      widthMm: Number(form.widthMm),
+      lengthMm: Number(form.lengthMm),
+      quantity: Number(form.quantity),
+      comment: form.comment || null,
+    }
+
+    if (isEditing.value && editIndex.value !== null) {
+      store.updateRequiredPiece(editIndex.value, payload)
+    } else {
+      store.addRequiredPiece(payload)
+    }
+    ui.setLastWidthMm(payload.widthMm)
+    dialog.value = false
+  }
+
+  function removeByIndex (index: number): void {
+    store.removeRequiredPiece(index)
+  }
+
+  const widthErrors = computed(() => (form.widthMm > 0 ? [] : ['Must be > 0']))
+  const lengthErrors = computed(() => (form.lengthMm > 0 ? [] : ['Must be > 0']))
+  const qtyErrors = computed(() => (Number.isInteger(form.quantity) && form.quantity >= 1 ? [] : ['Integer ≥ 1']))
 </script>
-
-

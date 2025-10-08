@@ -1,11 +1,11 @@
 import { Heap } from 'data-structure-typed'
-import { AvailablePlank, type GlobalSettings, type Plank, PlankDimension, PlankPiece, type PlankStorage, type PurchasePlanItem, type RequiredPiece } from '@/types/planner'
+import { type GlobalSettings, type Plank, PlankDimension, PlankPiece, type PlankStorage, type RequiredPieceInput } from '@/types/planner'
 
 interface ComputeInput {
   // availablePlanks: AvailablePlank[]
   availablePlanks: PlankStorage
   storage: PlankStorage
-  requiredPieces: RequiredPiece[]
+  requiredPieces: RequiredPieceInput[]
   settings: GlobalSettings
 }
 
@@ -49,8 +49,8 @@ class HeapNode {
       widthMm: currentRequiredPiece.widthMm,
       lengthMm: currentRequiredPiece.lengthMm,
       cutWidthMm: settings.sawKerfMm,
-      plank,
     })
+    plank.addPiece(_plankPiece)
 
     return new HeapNode({
       requiredPiecesLeft,
@@ -68,14 +68,12 @@ class HeapNode {
       throw new Error('No required piece left')
     }
 
-    // plank = plank.copy()
-
     const _plankPiece = new PlankPiece({
       widthMm: currentRequiredPiece.widthMm,
       lengthMm: currentRequiredPiece.lengthMm,
       cutWidthMm: settings.sawKerfMm,
-      plank,
     })
+    plank.addPiece(_plankPiece)
 
     return new HeapNode({
       requiredPiecesLeft,
@@ -160,9 +158,6 @@ class HeapNode {
 // Dynamic Disjkstra optimizer
 export function computeOptimalPlan (input: ComputeInput): ComputeResult {
   const { availablePlanks, requiredPieces, settings } = input
-  const kerf = settings.sawKerfMm
-
-  const planItems: PurchasePlanItem[] = []
   // const cutPlan: CutPlan = { items: [], totalCost: 0, totalCuts: 0 }
 
   if (requiredPieces.length === 0) {

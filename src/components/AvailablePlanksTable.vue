@@ -98,8 +98,10 @@
   import { computed, reactive, ref } from 'vue'
   import { validatePlankSKU } from '@/lib/validation'
   import { usePlannerStore } from '@/stores/planner'
+  import { useUiStore } from '@/stores/ui'
 
   const store = usePlannerStore()
+  const ui = useUiStore()
 
   const headers = [
     { title: 'Article', key: 'articleNr' },
@@ -130,7 +132,7 @@
   })
 
   function resetForm (): void {
-    form.widthMm = 100
+    form.widthMm = ui.lastWidthMm ?? 100
     form.lengthMm = 1000
     form.pricePerPiece = 10
     form.articleNr = ''
@@ -182,6 +184,7 @@
     } else {
       store.addPlank(payload)
     }
+    ui.setLastWidthMm(payload.widthMm)
     dialog.value = false
   }
 

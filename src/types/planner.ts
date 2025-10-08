@@ -25,6 +25,10 @@ export class AvailablePlank extends PlankDimension {
   // get hash() {
   //   return this.widthMm + ',' + this.lengthMm + ',' + this.pricePerPiece + ',' + this.articleNr
   // }
+
+  get completeHash () {
+    return this.widthMm + ',' + this.lengthMm + ',' + this.pricePerPiece + ',' + this.articleNr
+  }
 }
 
 // A real world plank
@@ -37,10 +41,6 @@ export class Plank extends PlankDimension {
     super({ widthMm: availablePlank.widthMm, lengthMm: availablePlank.lengthMm })
     this.availablePlank = availablePlank
     this.pieces = pieces
-
-    for (const p of this.pieces) {
-      p.plank = this
-    }
   }
 
   get lengthMmLeft () {
@@ -56,6 +56,14 @@ export class Plank extends PlankDimension {
     return this.availablePlank.hash + '(' + this.pieces.reduce((acc, p) => acc + p.lengthMm, 0) + ')'
   }
 
+  addPiece (piece: PlankPiece) {
+    const offset = this.pieces.reduce((acc, p) => acc + p.lengthMm + p.cutWidthMm, 0)
+    this.pieces.push(piece)
+
+    // Calculate offset of piece
+    piece.offsetMm = offset
+  }
+
   copy () {
     return new Plank({ availablePlank: this.availablePlank, pieces: [...this.pieces] })
   }
@@ -63,13 +71,12 @@ export class Plank extends PlankDimension {
 
 export class PlankPiece extends PlankDimension {
   cutWidthMm: number
-  plank: Plank
+  offsetMm: number
 
-  constructor ({ widthMm = 0, lengthMm = 0, cutWidthMm = 0, plank }: { widthMm?: number, lengthMm?: number, cutWidthMm?: number, plank: Plank }) {
+  constructor ({ widthMm = 0, lengthMm = 0, cutWidthMm = 0 }: { widthMm?: number, lengthMm?: number, cutWidthMm?: number }) {
     super({ widthMm, lengthMm })
     this.cutWidthMm = cutWidthMm
-    this.plank = plank
-    this.plank.pieces.push(this)
+    this.offsetMm = 0
   }
 }
 
@@ -85,7 +92,9 @@ export class PlankStorage {
   }
 
   get availablePlanks () {
-    return Array.from(this.availablePlankAmount.entries()).filter(([plank, amount]) => amount === null || amount > 0).map(([plank, amount]) => plank)
+    return Array.from(this.availablePlankAmount.entries())
+      .filter(([_plank, amount]) => amount === null || amount > 0)
+      .map(([plank, _amount]) => plank)
   }
 
   copy () {
@@ -105,7 +114,10 @@ export class PlankStorage {
   }
 }
 
-export interface RequiredPiece extends PlankPiece {
+// Minimal UI/storage-facing required piece shape
+export interface RequiredPieceInput {
+  widthMm: number
+  lengthMm: number
   quantity: number
   comment?: string | null
 }

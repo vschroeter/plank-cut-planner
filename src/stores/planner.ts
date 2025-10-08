@@ -1,4 +1,4 @@
-import type { GlobalSettings, PieceIdentity, PurchasePlanItem, RequiredPiece } from '@/types/planner'
+import type { GlobalSettings, PieceIdentity, PurchasePlanItem, RequiredPieceInput } from '@/types/planner'
 import { useLocalStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
@@ -19,7 +19,8 @@ export const usePlannerStore = defineStore('planner', () => {
   }
 
   const availablePlanks = useLocalStorage<AvailablePlankInput[]>('planner.availablePlanks', [])
-  const requiredPieces = useLocalStorage<RequiredPiece[]>('planner.requiredPieces', [])
+  const requiredPieces = useLocalStorage<RequiredPieceInput[]>('planner.requiredPieces', [])
+  const plankPlan = useLocalStorage<Plank[]>('planner.plankPlan', [])
   const settings = useLocalStorage<GlobalSettings>('planner.settings', defaultSettings)
   const donePieces = useLocalStorage<Record<string, boolean>>('planner.donePieces', {})
 
@@ -49,19 +50,9 @@ export const usePlannerStore = defineStore('planner', () => {
       storage.availablePlankAmount.set(plank, amount)
     }
 
-    // // Convert required pieces to simple PlankDimension-like objects so optimizer can hash
-    // const requiredPiecesAsDimensions = requiredPieces.value.map(rp => ({
-    //   widthMm: rp.widthMm,
-    //   lengthMm: rp.lengthMm,
-    //   get hash () {
-    //     return `${this.widthMm},${this.lengthMm}`
-    //   },
-    // })) as unknown as RequiredPiece[]
-
     const result = computeOptimalPlan({
       availablePlanks: storage,
       storage,
-      // requiredPieces: requiredPiecesAsDimensions,
       requiredPieces: toRaw(requiredPieces.value),
       settings: settings.value,
     })
@@ -70,7 +61,7 @@ export const usePlannerStore = defineStore('planner', () => {
     // Aggregate planks to be purchased into purchasePlan items
     const grouped = new Map<string, { plank: Plank, quantity: number }>()
     for (const plank of result.planksToBePurchased) {
-      const key = `${plank.availablePlank.hash}|${plank.availablePlank.pricePerPiece}|${plank.availablePlank.articleNr ?? ''}`
+      const key = plank.availablePlank.completeHash
       const entry = grouped.get(key)
       if (entry) {
         entry.quantity += 1
@@ -79,6 +70,8 @@ export const usePlannerStore = defineStore('planner', () => {
       }
     }
     purchasePlan.value = Array.from(grouped.values())
+    plankPlan.value = result.planksToBePurchased
+
     // No cut plan yet in the new optimizer; keep totals at zero
     cutPlan.value = { items: [], totalCost: 0, totalCuts: 0 }
     computeMs.value = Math.round(elapsed)
@@ -127,11 +120,11 @@ export const usePlannerStore = defineStore('planner', () => {
     availablePlanks.value.splice(index, 1)
     maybeRecompute()
   }
-  function addRequiredPiece (p: RequiredPiece): void {
+  function addRequiredPiece (p: RequiredPieceInput): void {
     requiredPieces.value.push(p)
     maybeRecompute()
   }
-  function updateRequiredPiece (index: number, p: Partial<RequiredPiece>): void {
+  function updateRequiredPiece (index: number, p: Partial<RequiredPieceInput>): void {
     const target = requiredPieces.value[index]
     if (!target) {
       return
@@ -174,6 +167,7 @@ export const usePlannerStore = defineStore('planner', () => {
     autoRecompute,
     purchasePlan,
     cutPlan,
+    plankPlan,
     lastComputedAt,
     computeMs,
     // getters

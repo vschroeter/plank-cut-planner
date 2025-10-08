@@ -14,6 +14,7 @@ declare module 'vue' {
     CutPlanView: typeof import('./components/CutPlanView.vue')['default']
     GlobalSettingsCard: typeof import('./components/GlobalSettingsCard.vue')['default']
     HelloWorld: typeof import('./components/HelloWorld.vue')['default']
+    PlankVisualization: typeof import('./components/PlankVisualization.vue')['default']
     PurchasePlanTable: typeof import('./components/PurchasePlanTable.vue')['default']
     RequiredPiecesTable: typeof import('./components/RequiredPiecesTable.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
