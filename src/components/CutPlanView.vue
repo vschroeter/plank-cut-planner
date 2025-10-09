@@ -1,11 +1,21 @@
 <template>
   <v-card>
-    <v-card-title>Cut Plan (total cuts: {{ store.totalCuts }})</v-card-title>
+    <v-card-title class="d-flex align-center">
+      <span>Cut Plan (total cuts: {{ store.totalCuts }})</span>
+      <v-spacer />
+      <v-btn
+        border
+        icon="mdi-restore"
+        rounded="lg"
+        :title="'Reset marked pieces'"
+        @click="store.resetAllDone()"
+      />
+    </v-card-title>
     <v-card-text ref="refCardContent">
 
       <v-row v-for="plank, idx in planks" :key="idx">
         <v-col>
-          <PlankVisualization :max-plank-length="maxPlankLength" :plank="plank" :width-reference="widthReference" />
+          <PlankVisualization :max-plank-length="maxPlankLength" :plank="plank" :plank-idx="idx" :width-reference="widthReference" />
         </v-col>
       </v-row>
 

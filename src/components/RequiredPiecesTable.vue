@@ -1,25 +1,33 @@
 <template>
-  <v-card>
-    <v-card-title>Required Pieces</v-card-title>
+  <v-card class="fill-card">
+    <v-card-title class="d-flex align-center">
+      <span>Required Pieces</span>
+      <v-spacer />
+      <v-btn
+        border
+        class="mx-2"
+        icon="mdi-delete-sweep"
+        rounded="lg"
+        :title="'Clear All Pieces'"
+        @click="confirmClear = true"
+      />
+      <v-btn
+        border
+        icon="mdi-plus"
+        rounded="lg"
+        :title="'Add Piece'"
+        @click="add"
+      />
+    </v-card-title>
     <v-card-text>
-      <v-data-table density="compact" :headers="headers" item-key="key" :items="rows">
-        <template #top>
-          <v-toolbar flat>
-            <v-toolbar-title>
-              <v-icon color="medium-emphasis" icon="mdi-shape-rectangle-plus" size="x-small" start />
-              Required pieces
-            </v-toolbar-title>
-            <v-spacer />
-            <v-btn
-              border
-              class="me-2"
-              prepend-icon="mdi-plus"
-              rounded="lg"
-              text="Add Piece"
-              @click="add"
-            />
-          </v-toolbar>
-        </template>
+      <v-data-table
+        density="compact"
+        :headers="headers"
+        hide-default-footer
+        item-key="key"
+        :items="rows"
+        :items-per-page="-1"
+      >
         <template #item.actions="{ item }">
           <div class="d-flex ga-2 justify-end">
             <v-icon color="medium-emphasis" icon="mdi-pencil" size="small" @click="edit(item)" />
@@ -74,6 +82,16 @@
       </v-card-actions>
     </v-card>
   </v-dialog>
+
+  <v-dialog v-model="confirmClear" max-width="520">
+    <v-card subtitle="This action cannot be undone." title="Clear all required pieces?">
+      <v-card-actions class="bg-surface-light">
+        <v-btn text="Cancel" variant="plain" @click="confirmClear = false" />
+        <v-spacer />
+        <v-btn color="error" text="Delete All" @click="doClearAll" />
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
 </template>
 
 <script lang="ts" setup>
@@ -102,6 +120,7 @@
   const dialog = ref(false)
   const isEditing = ref(false)
   const editIndex = ref<number | null>(null)
+  const confirmClear = ref(false)
 
   const form = reactive({
     widthMm: 100 as number,
@@ -165,4 +184,21 @@
   const widthErrors = computed(() => (form.widthMm > 0 ? [] : ['Must be > 0']))
   const lengthErrors = computed(() => (form.lengthMm > 0 ? [] : ['Must be > 0']))
   const qtyErrors = computed(() => (Number.isInteger(form.quantity) && form.quantity >= 1 ? [] : ['Integer ≥ 1']))
+
+  function doClearAll (): void {
+    store.clearRequiredPieces()
+    confirmClear.value = false
+  }
 </script>
+
+<style scoped>
+.fill-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.fill-card :deep(.v-card-text) {
+  flex: 1;
+  overflow: auto;
+}
+</style>

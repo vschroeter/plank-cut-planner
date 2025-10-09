@@ -1,31 +1,37 @@
 <template>
-  <v-container>
+  <v-container fluid>
     <v-app-bar density="compact" flat>
-      <v-btn icon="mdi-menu" @click="leftDrawerOpen = !leftDrawerOpen" />
       <v-toolbar-title>Plank Cut Planner</v-toolbar-title>
       <v-spacer />
-      <v-btn icon="mdi-cog" @click="rightDrawerOpen = !rightDrawerOpen" />
+      <v-btn icon="mdi-download" :title="'Export JSON'" @click="onExport" />
+      <v-btn icon="mdi-upload" :title="'Import JSON'" @click="triggerImport" />
+      <input
+        ref="importInput"
+        accept="application/json,.json"
+        style="display:none"
+        type="file"
+        @change="onImport"
+      >
+      <v-btn icon="mdi-cog" @click="settingsDialogOpen = true" />
     </v-app-bar>
-    <v-navigation-drawer v-model="rightDrawerOpen" location="right" :permanent="true" :width="rightDrawerWidth">
-      <GlobalSettingsCard />
-      <div class="resize-handle left" @mousedown="startResizeRight" />
-    </v-navigation-drawer>
-    <v-navigation-drawer v-model="leftDrawerOpen" location="left" :permanent="true" :width="leftDrawerWidth">
-      <AvailablePlanksTable />
-      <div class="resize-handle right" @mousedown="startResizeLeft" />
-    </v-navigation-drawer>
-    <!-- <v-row>
-      <v-col cols="12">
-        <div class="d-flex justify-space-between align-center">
-          <ComputeStatusBar />
-          <v-btn icon="mdi-cog" @click="drawer = !drawer" />
-        </div>
-      </v-col>
-    </v-row> -->
-    <v-row>
-      <v-col cols="12">
+
+    <!-- Settings Dialog -->
+    <v-dialog v-model="settingsDialogOpen" max-width="720">
+      <v-card>
+        <v-card-title>Settings</v-card-title>
+        <v-card-text>
+          <GlobalSettingsCard />
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn text="Close" @click="settingsDialogOpen = false" />
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <div class="planner-grid" :class="{ 'has-alerts': hasAlerts }">
+      <div v-if="hasAlerts" class="grid-full">
         <v-alert
-          v-if="store.computeErrors.length > 0"
           class="mb-4"
           density="comfortable"
           type="error"
@@ -37,27 +43,29 @@
             </ul>
           </div>
         </v-alert>
+      </div>
+
+      <div class="grid-left-top">
         <RequiredPiecesTable />
-      </v-col>
-      <!-- <v-col cols="12" md="6">
-        <RequiredPiecesTable />
-      </v-col> -->
-    </v-row>
-    <v-row>
-      <v-col cols="12">
+      </div>
+
+      <div class="grid-left-bottom">
         <PurchasePlanTable />
-      </v-col>
-    </v-row>
-    <v-row>
-      <v-col cols="12">
+      </div>
+
+      <div class="grid-center">
         <CutPlanView />
-      </v-col>
-    </v-row>
+      </div>
+
+      <div class="grid-right">
+        <AvailablePlanksTable />
+      </div>
+    </div>
   </v-container>
 </template>
 
 <script lang="ts" setup>
-  import { useLocalStorage } from '@vueuse/core'
+  import { computed, onMounted, ref } from 'vue'
   import AvailablePlanksTable from '@/components/AvailablePlanksTable.vue'
   import CutPlanView from '@/components/CutPlanView.vue'
   import GlobalSettingsCard from '@/components/GlobalSettingsCard.vue'
@@ -65,71 +73,132 @@
   import RequiredPiecesTable from '@/components/RequiredPiecesTable.vue'
   import { usePlannerStore } from '@/stores/planner'
   const store = usePlannerStore()
-  const leftDrawerOpen = useLocalStorage<boolean>('planner.leftDrawerOpen', true)
-  const rightDrawerOpen = useLocalStorage<boolean>('planner.rightDrawerOpen', true)
-  const leftDrawerWidth = useLocalStorage<number>('planner.leftDrawerWidth', 360)
-  const rightDrawerWidth = useLocalStorage<number>('planner.rightDrawerWidth', 360)
 
-  const MIN_WIDTH = 200
-  const MAX_WIDTH = 1000
+  const settingsDialogOpen = ref(false)
+  const hasAlerts = computed(() => store.computeErrors.length > 0)
 
-  function clamp (value: number, min: number, max: number): number {
-    return Math.min(max, Math.max(min, value))
+  // Import/Export handlers
+  const importInput = ref<HTMLInputElement | null>(null)
+  function onExport (): void {
+    const data = store.exportAll()
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'plank-planner.json'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+  function triggerImport (): void {
+    importInput.value?.click()
+  }
+  async function onImport (e: Event): Promise<void> {
+    const input = e.target as HTMLInputElement
+    const file = input.files && input.files[0]
+    if (!file) return
+    try {
+      const text = await file.text()
+      const data = JSON.parse(text)
+      store.importAll(data)
+    } catch (error) {
+      console.error('Failed to import JSON', error)
+    } finally {
+      if (importInput.value) importInput.value.value = ''
+    }
   }
 
-  function startResizeLeft (e: MouseEvent): void {
-    e.preventDefault()
-    const startX = e.clientX
-    const startWidth = Number(leftDrawerWidth.value)
-    document.body.style.cursor = 'col-resize'
-    const onMove = (ev: MouseEvent): void => {
-      const delta = ev.clientX - startX
-      leftDrawerWidth.value = clamp(startWidth + delta, MIN_WIDTH, MAX_WIDTH)
-    }
-    const onUp = (): void => {
-      document.body.style.cursor = ''
-      window.removeEventListener('mousemove', onMove)
-      window.removeEventListener('mouseup', onUp)
-    }
-    window.addEventListener('mousemove', onMove)
-    window.addEventListener('mouseup', onUp)
-  }
-
-  function startResizeRight (e: MouseEvent): void {
-    e.preventDefault()
-    const startX = e.clientX
-    const startWidth = Number(rightDrawerWidth.value)
-    document.body.style.cursor = 'col-resize'
-    const onMove = (ev: MouseEvent): void => {
-      const delta = startX - ev.clientX
-      rightDrawerWidth.value = clamp(startWidth + delta, MIN_WIDTH, MAX_WIDTH)
-    }
-    const onUp = (): void => {
-      document.body.style.cursor = ''
-      window.removeEventListener('mousemove', onMove)
-      window.removeEventListener('mouseup', onUp)
-    }
-    window.addEventListener('mousemove', onMove)
-    window.addEventListener('mouseup', onUp)
-  }
+  // Recompute on page load
+  onMounted(() => {
+    store.computePlans()
+  })
 </script>
 
 <style scoped>
-.resize-handle {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 6px;
-  cursor: col-resize;
-  opacity: 0.2;
+/* Responsive CSS grid layout */
+.planner-grid {
+  display: grid;
+  gap: 16px;
+  height: calc(100dvh - 126px);
 }
-.resize-handle.left {
-  left: 0;
+
+/* Small: stack all */
+@media (max-width: 959px) {
+  .planner-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto auto;
+    grid-template-areas:
+      'leftTop'
+      'leftBottom'
+      'right'
+      'center';
+  }
+  .grid-full { grid-area: full; }
+  .grid-left-top { grid-area: leftTop; }
+  .grid-left-bottom { grid-area: leftBottom; }
+  .grid-right { grid-area: right; }
+  .grid-center { grid-area: center; }
+
+  .planner-grid.has-alerts {
+    grid-template-rows: auto auto auto auto auto;
+    grid-template-areas:
+      'full'
+      'leftTop'
+      'leftBottom'
+      'right'
+      'center';
+  }
 }
-.resize-handle.right {
-  right: 0;
+
+/* Medium: two columns, tables top, cut plan full width below */
+@media (min-width: 960px) and (max-width: 1279px) {
+  .planner-grid {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr) auto;
+    grid-template-areas:
+      'leftTop right'
+      'leftBottom right'
+      'center center';
+  }
+  .grid-full { grid-area: full; }
+  .grid-left-top { grid-area: leftTop; min-height: 0; }
+  .grid-left-bottom { grid-area: leftBottom; min-height: 0; }
+  .grid-right { grid-area: right; min-height: 0; }
+  .grid-center { grid-area: center; }
+
+  .planner-grid.has-alerts {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto minmax(0, 1fr) minmax(0, 1fr) auto;
+    grid-template-areas:
+      'full full'
+      'leftTop right'
+      'leftBottom right'
+      'center center';
+  }
 }
-.resize-handle:hover {
-  background-color: currentColor;
+
+/* Large: three columns, center is cut plan spanning both rows */
+@media (min-width: 1280px) {
+  .planner-grid {
+    grid-template-columns: 1fr 1.2fr 1fr;
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      'leftTop center right'
+      'leftBottom center right';
+    align-items: stretch;
+  }
+  .grid-full { grid-area: full; }
+  .grid-left-top { grid-area: leftTop; min-height: 0; overflow: auto; }
+  .grid-left-bottom { grid-area: leftBottom; min-height: 0; overflow: auto; }
+  .grid-right { grid-area: right; min-height: 0; overflow: auto; }
+  .grid-center { grid-area: center; min-height: 0; overflow: auto; }
+
+  .planner-grid.has-alerts {
+    grid-template-columns: 1fr 1.2fr 1fr;
+    grid-template-rows: auto minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      'full full full'
+      'leftTop center right'
+      'leftBottom center right';
+  }
 }
 </style>

@@ -1,7 +1,7 @@
 import type { GlobalSettings, PieceIdentity, PurchasePlanItem, RequiredPieceInput } from '@/types/planner'
 import { useLocalStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, ref, toRaw } from 'vue'
 import { sortPlanks } from '@/lib/sorting'
 import { computeOptimalPlan } from '@/services/optimizer'
 import { AvailablePlank as AvailablePlankClass, Plank, PlankStorage } from '@/types/planner'
@@ -150,7 +150,12 @@ export const usePlannerStore = defineStore('planner', () => {
     settings.value.currency = symbol
   }
   function toggleAutoRecompute (value?: boolean): void {
-    autoRecompute.value = value ?? !autoRecompute.value
+    const next = value ?? !autoRecompute.value
+    autoRecompute.value = next
+    if (next) {
+      // Trigger a recomputation immediately when auto is enabled
+      computePlans()
+    }
   }
 
   function markPieceDone (id: PieceIdentity, done: boolean): void {
@@ -159,6 +164,64 @@ export const usePlannerStore = defineStore('planner', () => {
 
   function resetAllDone (): void {
     donePieces.value = {}
+  }
+
+  // Clear helpers
+  function clearAvailablePlanks (): void {
+    availablePlanks.value = []
+    maybeRecompute()
+  }
+
+  function clearRequiredPieces (): void {
+    requiredPieces.value = []
+    maybeRecompute()
+  }
+
+  // Import/Export
+  type ExportData = {
+    version: 1
+    availablePlanks: typeof availablePlanks.value
+    requiredPieces: typeof requiredPieces.value
+    settings: typeof settings.value
+    donePieces: typeof donePieces.value
+    autoRecompute: boolean
+  }
+
+  function exportAll (): ExportData {
+    return {
+      version: 1,
+      availablePlanks: toRaw(availablePlanks.value),
+      requiredPieces: toRaw(requiredPieces.value),
+      settings: toRaw(settings.value),
+      donePieces: toRaw(donePieces.value),
+      autoRecompute: !!autoRecompute.value,
+    }
+  }
+
+  function importAll (data: unknown): void {
+    try {
+      const d = data as Partial<ExportData>
+      if (!d || typeof d !== 'object') {
+        return
+      }
+      if (d.availablePlanks && Array.isArray(d.availablePlanks)) {
+        availablePlanks.value = d.availablePlanks as any
+      }
+      if (d.requiredPieces && Array.isArray(d.requiredPieces)) {
+        requiredPieces.value = d.requiredPieces as any
+      }
+      if (d.settings && typeof d.settings === 'object') {
+        settings.value = { ...settings.value, ...d.settings }
+      }
+      if (d.donePieces && typeof d.donePieces === 'object') {
+        donePieces.value = d.donePieces as any
+      }
+      if (typeof d.autoRecompute === 'boolean') {
+        autoRecompute.value = d.autoRecompute
+      }
+    } finally {
+      maybeRecompute()
+    }
   }
 
   return {
@@ -192,5 +255,9 @@ export const usePlannerStore = defineStore('planner', () => {
     toggleAutoRecompute,
     markPieceDone,
     resetAllDone,
+    clearAvailablePlanks,
+    clearRequiredPieces,
+    exportAll,
+    importAll,
   }
 })

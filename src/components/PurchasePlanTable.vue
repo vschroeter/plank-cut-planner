@@ -1,7 +1,16 @@
 <template>
-  <v-card>
+  <v-card class="fill-card">
     <v-card-title>Purchase Plan</v-card-title>
-    <v-data-table :items="rows" :headers="headers" item-key="articleNr" density="compact" />
+    <v-card-text>
+      <v-data-table
+        :items="rows"
+        :headers="headers"
+        item-key="articleNr"
+        density="compact"
+        hide-default-footer
+        :items-per-page="-1"
+      />
+    </v-card-text>
     <div class="text-right px-4 py-2">
       <strong>Total: {{ formatCurrency(total, store.settings.currency) }}</strong>
     </div>
@@ -14,12 +23,12 @@ import { computed } from 'vue'
 import { formatCurrency } from '@/lib/format'
 const store = usePlannerStore()
 const headers = [
-  { title: 'Article', key: 'articleNr' },
   { title: 'Width (mm)', key: 'widthMm' },
   { title: 'Length (mm)', key: 'lengthMm' },
   { title: 'Unit Price', key: 'unitPriceFmt' },
   { title: 'Qty', key: 'quantity' },
   { title: 'Subtotal', key: 'subtotalFmt' },
+  { title: 'Article', key: 'articleNr' },
 ]
 
 const rows = computed(() => store.purchasePlan.map(item => {
@@ -39,5 +48,17 @@ const rows = computed(() => store.purchasePlan.map(item => {
 const total = computed(() => store.purchasePlan.reduce((s, item) => s + item.quantity * item.plank.availablePlank.pricePerPiece, 0))
 defineExpose({ formatCurrency })
 </script>
+
+<style scoped>
+.fill-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.fill-card :deep(.v-card-text) {
+  flex: 1;
+  overflow: auto;
+}
+</style>
 
 
