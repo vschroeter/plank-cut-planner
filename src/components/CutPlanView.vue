@@ -3,7 +3,7 @@
     <v-card-title>Cut Plan (total cuts: {{ store.totalCuts }})</v-card-title>
     <v-card-text ref="refCardContent">
 
-      <v-row v-for="plank in planks" :key="plank.hash">
+      <v-row v-for="plank, idx in planks" :key="idx">
         <v-col>
           <PlankVisualization :max-plank-length="maxPlankLength" :plank="plank" :width-reference="widthReference" />
         </v-col>

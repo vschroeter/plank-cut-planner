@@ -24,6 +24,19 @@
     </v-row> -->
     <v-row>
       <v-col cols="12">
+        <v-alert
+          v-if="store.computeErrors.length > 0"
+          class="mb-4"
+          density="comfortable"
+          type="error"
+        >
+          <div class="d-flex flex-column ga-1">
+            <div class="text-subtitle-2">Computation issues</div>
+            <ul class="ma-0 ps-4">
+              <li v-for="(msg, idx) in store.computeErrors" :key="idx">{{ msg }}</li>
+            </ul>
+          </div>
+        </v-alert>
         <RequiredPiecesTable />
       </v-col>
       <!-- <v-col cols="12" md="6">
@@ -50,6 +63,8 @@
   import GlobalSettingsCard from '@/components/GlobalSettingsCard.vue'
   import PurchasePlanTable from '@/components/PurchasePlanTable.vue'
   import RequiredPiecesTable from '@/components/RequiredPiecesTable.vue'
+  import { usePlannerStore } from '@/stores/planner'
+  const store = usePlannerStore()
   const leftDrawerOpen = useLocalStorage<boolean>('planner.leftDrawerOpen', true)
   const rightDrawerOpen = useLocalStorage<boolean>('planner.rightDrawerOpen', true)
   const leftDrawerWidth = useLocalStorage<number>('planner.leftDrawerWidth', 360)

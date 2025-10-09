@@ -30,6 +30,7 @@ export const usePlannerStore = defineStore('planner', () => {
   const cutPlan = ref<{ items: any[], totalCost: number, totalCuts: number }>({ items: [], totalCost: 0, totalCuts: 0 })
   const lastComputedAt = ref<number | null>(null)
   const computeMs = ref<number | null>(null)
+  const computeErrors = ref<string[]>([])
 
   const sortedAvailablePlanks = computed(() => availablePlanks.value.toSorted(sortPlanks))
   const totalCuts = computed<number>(() => cutPlan.value.totalCuts)
@@ -56,6 +57,8 @@ export const usePlannerStore = defineStore('planner', () => {
       requiredPieces: toRaw(requiredPieces.value),
       settings: settings.value,
     })
+
+    computeErrors.value = result.errors ?? []
 
     const elapsed = performance.now() - start
     // Aggregate planks to be purchased into purchasePlan items
@@ -170,6 +173,7 @@ export const usePlannerStore = defineStore('planner', () => {
     plankPlan,
     lastComputedAt,
     computeMs,
+    computeErrors,
     // getters
     sortedAvailablePlanks,
     totalCuts,

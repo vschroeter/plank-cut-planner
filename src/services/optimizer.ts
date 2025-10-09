@@ -11,6 +11,7 @@ interface ComputeInput {
 
 interface ComputeResult {
   planksToBePurchased: Plank[]
+  errors: string[]
   // cutPlan: CutPlan
   // totalCuts: number
 }
@@ -30,8 +31,12 @@ class HeapNode {
     this.totalPrice = totalPrice
   }
 
-  get hash () {
-    return this.requiredPiecesLeft.map(p => p.hash).join('|') + '#' + this.planksToBePurchased.map(p => p.hash).join('|') + '#' + this.storage.hash
+  // get hash () {
+  //   return this.requiredPiecesLeft.map(p => p.hash).join('|') + '--' + this.planksToBePurchased.map(p => p.lengthMmLeft).join('|')
+  // }
+
+  getVisitedHash (minLengthMm: number) {
+    return this.requiredPiecesLeft.map(p => p.hash).join('|') + '--' + this.planksToBePurchased.filter(p => p.lengthMmLeft > minLengthMm).toSorted((a, b) => b.lengthMmLeft - a.lengthMmLeft).map(p => p.lengthMmLeft).join('|')
   }
 
   createNextNodeWithNewPlank (plank: Plank, settings: GlobalSettings) {
@@ -159,9 +164,10 @@ class HeapNode {
 export function computeOptimalPlan (input: ComputeInput): ComputeResult {
   const { availablePlanks, requiredPieces, settings } = input
   // const cutPlan: CutPlan = { items: [], totalCost: 0, totalCuts: 0 }
+  const errors: string[] = []
 
   if (requiredPieces.length === 0) {
-    return { planksToBePurchased: [] }
+    return { planksToBePurchased: [], errors }
   }
 
   // Convert required pieces to simple PlankDimension-like objects
@@ -174,6 +180,39 @@ export function computeOptimalPlan (input: ComputeInput): ComputeResult {
 
   // Sort the required planks by length descending, starting with the longest
   const sortedRequiredPieces = [...requiredPiecesAsDimensions].toSorted((a, b) => b.lengthMm - a.lengthMm)
+  const _maxLengthMm = sortedRequiredPieces[0]!.lengthMm
+  const minLengthMm = sortedRequiredPieces.at(-1)!.lengthMm
+
+  console.log('Sorted required pieces', sortedRequiredPieces)
+
+  // Pre-validate feasibility: widths and lengths
+  const availableByWidth = new Map<number, Plank[]>()
+  for (const [plank, amount] of availablePlanks.availablePlankAmount.entries()) {
+    if (amount === null || amount > 0) {
+      const list = availableByWidth.get(plank.widthMm) ?? []
+      list.push(plank)
+      availableByWidth.set(plank.widthMm, list)
+    }
+  }
+
+  const missingWidthErrors = new Set<string>()
+  const noFitLengthErrors = new Set<string>()
+  for (const req of requiredPieces) {
+    const candidates = availableByWidth.get(req.widthMm) ?? []
+    if (candidates.length === 0) {
+      missingWidthErrors.add(`No available planks with width ${req.widthMm}mm for required pieces`)
+      continue
+    }
+    const hasFit = candidates.some(p => p.lengthMm >= req.lengthMm)
+    if (!hasFit) {
+      noFitLengthErrors.add(`No plank of width ${req.widthMm}mm has length ≥ ${req.lengthMm}mm`)
+    }
+  }
+
+  errors.push(...missingWidthErrors, ...noFitLengthErrors)
+  if (errors.length > 0) {
+    return { planksToBePurchased: [], errors }
+  }
 
   const initialNode: HeapNode = new HeapNode({
     requiredPiecesLeft: sortedRequiredPieces,
@@ -194,6 +233,8 @@ export function computeOptimalPlan (input: ComputeInput): ComputeResult {
 
   const visited = new Set<string>()
 
+  // return { planksToBePurchased: [] }
+
   while (queue.size > 0) {
     const currentNode = queue.poll()
 
@@ -202,16 +243,17 @@ export function computeOptimalPlan (input: ComputeInput): ComputeResult {
     }
 
     const requiredPiecesLeft = currentNode.requiredPiecesLeft
-    const currentTotalCost = currentNode.totalPrice
+    const _currentTotalCost = currentNode.totalPrice
     const availableStorage = currentNode.storage
 
     // If we have no required pieces, we have found a solution
     if (requiredPiecesLeft.length === 0) {
-      return { planksToBePurchased: currentNode.planksToBePurchased }
+      console.log('Visited', visited.size)
+      return { planksToBePurchased: currentNode.planksToBePurchased, errors }
     }
 
     // Check if we have already visited this node
-    const hash = currentNode.hash
+    const hash = currentNode.getVisitedHash(minLengthMm)
     if (visited.has(hash)) {
       continue
     }
@@ -223,19 +265,21 @@ export function computeOptimalPlan (input: ComputeInput): ComputeResult {
 
     // Create possible next nodes
     for (const plank of availableStorage.availablePlanks) {
-      if (plank.lengthMmLeft >= currentPiece.lengthMm) {
+      if (plank.lengthMmLeft >= currentPiece.lengthMm && plank.widthMm == currentPiece.widthMm) {
         const nextNode = currentNode.createNextNodeWithNewPlank(plank, settings)
         queue.add(nextNode)
       }
     }
 
     for (const plank of currentNode.planksToBePurchased) {
-      if (plank.lengthMmLeft >= currentPiece.lengthMm) {
+      if (plank.lengthMmLeft >= currentPiece.lengthMm && plank.widthMm == currentPiece.widthMm) {
         const nextNode = currentNode.createNextNodeWithExistingPlank(plank, settings)
         queue.add(nextNode)
       }
     }
   }
 
-  return { planksToBePurchased: [] }
+  // If we exhaust the search without a solution, report as unsatisfiable
+  errors.push('Not enough material to satisfy all required pieces')
+  return { planksToBePurchased: [], errors }
 }
