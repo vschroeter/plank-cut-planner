@@ -1,10 +1,10 @@
-import { describe, it, expect, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
 import { createTestingPinia } from '@pinia/testing'
-import { createVuetify } from 'vuetify'
-import 'vuetify/styles'
-import App from '@/App.vue'
+import { mount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { createRouter, createWebHistory } from 'vue-router'
+import { createVuetify } from 'vuetify'
+import App from '@/App.vue'
+import 'vuetify/styles'
 
 describe('App unsatisfiable demand', () => {
   beforeEach(() => {
@@ -26,5 +26,3 @@ describe('App unsatisfiable demand', () => {
     expect(wrapper.exists()).toBe(true)
   })
 })
-
-

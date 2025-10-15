@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach } from 'vitest'
-import { setActivePinia, createPinia } from 'pinia'
+import { createPinia, setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { usePlannerStore } from '@/stores/planner'
 
 describe('planner store contract', () => {
@@ -34,5 +34,3 @@ describe('planner store contract', () => {
     expect(typeof store.computePlans).toBe('function')
   })
 })
-
-

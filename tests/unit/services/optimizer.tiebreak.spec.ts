@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { computeOptimalPlan } from '@/services/optimizer'
 
 describe('optimizer tie-breaker', () => {
@@ -23,5 +23,3 @@ describe('optimizer tie-breaker', () => {
     expect(result.cutPlan.totalCost).toBe(10)
   })
 })
-
-

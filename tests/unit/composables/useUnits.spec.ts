@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
-import { toInches, toMillimeters, formatLength } from '@/composables/useUnits'
+import { describe, expect, it } from 'vitest'
+import { formatLength, toInches, toMillimeters } from '@/composables/useUnits'
 
 describe('useUnits', () => {
   it('converts mm <-> inches', () => {
@@ -12,5 +12,3 @@ describe('useUnits', () => {
     expect(formatLength(25.4, 'inch')).toMatch(/1(\.0)? in/)
   })
 })
-
-

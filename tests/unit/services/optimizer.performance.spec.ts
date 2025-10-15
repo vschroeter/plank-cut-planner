@@ -1,7 +1,7 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { computeOptimalPlan } from '@/services/optimizer'
 
-function genData(nSkus: number, nPieces: number) {
+function genData (nSkus: number, nPieces: number) {
   const availablePlanks = Array.from({ length: nSkus }, (_, i) => ({
     articleNr: `A${i}`,
     widthMm: 100 + (i % 3) * 10,
@@ -27,5 +27,3 @@ describe('optimizer performance', () => {
     expect(elapsed).toBeLessThan(1000)
   })
 })
-
-

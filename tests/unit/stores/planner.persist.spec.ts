@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { usePlannerStore } from '@/stores/planner'
 
 describe('planner store persistence', () => {
@@ -25,5 +25,3 @@ describe('planner store persistence', () => {
     expect(second.settings.sawKerfMm).toBe(3)
   })
 })
-
-

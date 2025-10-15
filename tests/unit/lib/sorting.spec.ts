@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { sortPlanks } from '@/lib/sorting'
 
 describe('sorting utility', () => {
@@ -19,5 +19,3 @@ describe('sorting utility', () => {
     expect(sorted[2].pricePerPiece).toBe(30)
   })
 })
-
-

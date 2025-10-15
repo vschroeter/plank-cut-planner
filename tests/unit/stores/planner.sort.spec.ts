@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 // Store under test (to be implemented in T012)
 import { usePlannerStore } from '@/stores/planner'
@@ -23,5 +23,3 @@ describe('sortedAvailablePlanks', () => {
     expect(ordered.map(p => p.articleNr)).toEqual(['B', 'D', 'C', 'A'])
   })
 })
-
-

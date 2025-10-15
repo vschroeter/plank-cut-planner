@@ -8,7 +8,6 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
-    AppFooter: typeof import('./components/AppFooter.vue')['default']
     AvailablePlanksTable: typeof import('./components/AvailablePlanksTable.vue')['default']
     ComputeStatusBar: typeof import('./components/ComputeStatusBar.vue')['default']
     CutPlanView: typeof import('./components/CutPlanView.vue')['default']

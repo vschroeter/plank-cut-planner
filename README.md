@@ -1,81 +1,118 @@
-# Vuetify (Default)
+<div align="center">
 
-This is the official scaffolding tool for Vuetify, designed to give you a head start in building your new Vuetify application. It sets up a base template with all the necessary configurations and standard directory structure, enabling you to begin development without the hassle of setting up the project from scratch.
+# Plank Cut Planner
 
-## ❗️ Important Links
+Plan the shopping list of wooden planks based on store availability and your required pieces. The app computes a purchase plan and a cut plan that aim to minimize cost and waste.
 
-- 📄 [Docs](https://vuetifyjs.com/)
-- 🚨 [Issues](https://issues.vuetifyjs.com/)
-- 🏬 [Store](https://store.vuetifyjs.com/)
-- 🎮 [Playground](https://play.vuetifyjs.com/)
-- 💬 [Discord](https://community.vuetifyjs.com)
+</div>
 
-## 💿 Install
+---
 
-Set up your project using your preferred package manager. Use the corresponding command to install the dependencies:
+## Purpose
 
-| Package Manager                                                | Command        |
-|---------------------------------------------------------------|----------------|
-| [yarn](https://yarnpkg.com/getting-started)                   | `yarn install` |
-| [npm](https://docs.npmjs.com/cli/v7/commands/npm-install)     | `npm install`  |
-| [pnpm](https://pnpm.io/installation)                          | `pnpm install` |
-| [bun](https://bun.sh/#getting-started)                        | `bun install`  |
+Given a set of required rectangular pieces and a catalog of available planks at a hardware store (length, width, price, optional article number), the planner finds a combination of planks to buy and assigns cuts so that:
 
-After completing the installation, your environment is ready for Vuetify development.
+- Total cost is minimized
+- Waste is minimized (respecting saw kerf)
+- Orientation is respected (pieces are not rotated 90°)
+- Tie‑breakers prefer fewer total cuts, then fewer purchased planks
 
-## ✨ Features
+You can add/edit inputs directly in the UI, then view the computed Purchase Plan and Cut Plan. Plans can be exported as JSON (for later import) or Markdown (for printing/sharing).
 
-- 🖼️ **Optimized Front-End Stack**: Leverage the latest Vue 3 and Vuetify 3 for a modern, reactive UI development experience. [Vue 3](https://v3.vuejs.org/) | [Vuetify 3](https://vuetifyjs.com/en/)
-- 🗃️ **State Management**: Integrated with [Pinia](https://pinia.vuejs.org/), the intuitive, modular state management solution for Vue.
-- 🚦 **Routing and Layouts**: Utilizes Vue Router for SPA navigation and vite-plugin-vue-layouts-next for organizing Vue file layouts. [Vue Router](https://router.vuejs.org/) | [vite-plugin-vue-layouts-next](https://github.com/loicduong/vite-plugin-vue-layouts-next)
-- 💻 **Enhanced Development Experience**: Benefit from TypeScript's static type checking and the ESLint plugin suite for Vue, ensuring code quality and consistency. [TypeScript](https://www.typescriptlang.org/) | [ESLint Plugin Vue](https://eslint.vuejs.org/)
-- ⚡ **Next-Gen Tooling**: Powered by Vite, experience fast cold starts and instant HMR (Hot Module Replacement). [Vite](https://vitejs.dev/)
-- 🧩 **Automated Component Importing**: Streamline your workflow with unplugin-vue-components, automatically importing components as you use them. [unplugin-vue-components](https://github.com/antfu/unplugin-vue-components)
-- 🛠️ **Strongly-Typed Vue**: Use vue-tsc for type-checking your Vue components, and enjoy a robust development experience. [vue-tsc](https://github.com/johnsoncodehk/volar/tree/master/packages/vue-tsc)
+## Features
 
-These features are curated to provide a seamless development experience from setup to deployment, ensuring that your Vuetify application is both powerful and maintainable.
+- Required Pieces table: length × width and quantity
+- Available Planks table: length × width, price, optional article number
+- Settings: saw kerf, unit system (`mm` or `inch`), currency, auto‑recompute toggle
+- Purchase Plan with totals and cheapest feasible combination
+- Cut Plan visualization per purchased plank, respecting kerf and orientation
+- Export/Import: JSON round‑trip; Markdown export of the cut plan
+- Local persistence: data is stored in the browser (via Pinia + localStorage)
 
-## 💡 Usage
+## Quickstart
 
-This section covers how to start the development server and build your project for production.
+### Prerequisites
 
-### Starting the Development Server
+- Node.js 22+
+- pnpm 9+
 
-To start the development server with hot-reload, run the following command. The server will be accessible at [http://localhost:3000](http://localhost:3000):
+### Install
 
 ```bash
-yarn dev
+pnpm install
 ```
 
-(Repeat for npm, pnpm, and bun with respective commands.)
-
-> Add NODE_OPTIONS='--no-warnings' to suppress the JSON import warnings that happen as part of the Vuetify import mapping. If you are on Node [v21.3.0](https://nodejs.org/en/blog/release/v21.3.0) or higher, you can change this to NODE_OPTIONS='--disable-warning=5401'. If you don't mind the warning, you can remove this from your package.json dev script.
-
-### Building for Production
-
-To build your project for production, use:
+### Run dev server
 
 ```bash
-yarn build
+pnpm dev
 ```
 
-(Repeat for npm, pnpm, and bun with respective commands.)
+Vite will print the local URL (typically `http://localhost:5173`).
 
-Once the build process is completed, your application will be ready for deployment in a production environment.
+### Build and preview
 
-## 💪 Support Vuetify Development
+```bash
+pnpm build
+pnpm preview
+```
 
-This project is built with [Vuetify](https://vuetifyjs.com/en/), a UI Library with a comprehensive collection of Vue components. Vuetify is an MIT licensed Open Source project that has been made possible due to the generous contributions by our [sponsors and backers](https://vuetifyjs.com/introduction/sponsors-and-backers/). If you are interested in supporting this project, please consider:
+### Test and lint
 
-- [Requesting Enterprise Support](https://support.vuetifyjs.com/)
-- [Sponsoring John on Github](https://github.com/users/johnleider/sponsorship)
-- [Sponsoring Kael on Github](https://github.com/users/kaelwd/sponsorship)
-- [Supporting the team on Open Collective](https://opencollective.com/vuetify)
-- [Becoming a sponsor on Patreon](https://www.patreon.com/vuetify)
-- [Becoming a subscriber on Tidelift](https://tidelift.com/subscription/npm/vuetify)
-- [Making a one-time donation with Paypal](https://paypal.me/vuetify)
+```bash
+pnpm test        # run tests once
+pnpm test:watch  # watch mode
+pnpm lint        # eslint --fix
+pnpm type-check  # vue-tsc project check
+```
 
-## 📑 License
-[MIT](http://opensource.org/licenses/MIT)
+## Usage
 
-Copyright (c) 2016-present Vuetify, LLC
+1. Open the app and go to the main planner page.
+2. Add Required Pieces: enter length × width and quantity. Units follow the setting in Settings.
+3. Add Available Planks: enter plank length × width and price; article number is optional.
+   - Duplicate handling: rows with the same article number are merged (availability sums; latest price wins). If article number is blank, rows are merged only when `(width, length, price)` are identical.
+4. Adjust Settings: saw kerf (mm), unit system (`mm`/`inch`), currency, and auto‑recompute.
+   - Auto‑recompute is enabled until a computation takes > 1.0s; then it is disabled to keep the UI responsive. You can re‑enable it in Settings.
+5. Compute:
+   - If auto is on, plans recompute as you edit.
+   - If auto is off, click the Compute button in the footer or “Compute Now” in Settings.
+6. Review results:
+   - Purchase Plan: see which planks to buy and totals.
+   - Cut Plan: per‑plank layout of cuts, respecting kerf and orientation.
+7. Export/Import:
+   - Toolbar actions: Export JSON (download icon), Export Markdown (document icon), Import JSON (upload icon).
+   - JSON lets you save and restore all tables and settings.
+   - Markdown exports a printable cut‑plan summary.
+
+## How it works (high level)
+
+- Cuts are orthogonal to the plank’s long side (length); pieces are not rotated 90°.
+- Saw kerf is inserted between sequential cuts.
+- The solver searches feasible assignments, optimizing for cost and waste with tie‑breakers: fewest cuts, then fewest purchased planks.
+- Errors (e.g., unsatisfiable inputs) are shown as alerts above the tables.
+
+## Tech stack
+
+- Vue 3 + TypeScript, Vite, Vuetify 3
+- State: Pinia (persisted to `localStorage`)
+- Router: Vue Router
+- Tests: Vitest + Vue Test Utils + jsdom
+
+## Project scripts
+
+```bash
+pnpm dev
+pnpm build
+pnpm preview
+pnpm test
+pnpm test:watch
+pnpm lint
+pnpm type-check
+```
+
+## Specs and notes
+
+- See `specs/001-material-planning-web/quickstart.md` for a short project overview
+- See `specs/001-material-planning-web/spec.md` and `specs/001-material-planning-web/tasks.md` for functional details and roadmap
+

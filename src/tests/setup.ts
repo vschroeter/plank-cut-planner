@@ -10,8 +10,6 @@ config.global.plugins = [vuetify]
 
 // Stub out non-essential components to reduce noise
 config.global.stubs = {
-  transition: false,
+  'transition': false,
   'v-icon': true,
 }
-
-

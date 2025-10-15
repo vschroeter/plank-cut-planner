@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest'
-import { JSDOM } from 'jsdom'
 import axeCore from 'axe-core'
+import { JSDOM } from 'jsdom'
+import { describe, expect, it } from 'vitest'
 
 describe('a11y smoke', () => {
   it('root page has no critical violations', async () => {
@@ -10,5 +10,3 @@ describe('a11y smoke', () => {
     expect(results.violations.filter((v: any) => v.impact === 'critical')).toEqual([])
   })
 })
-
-

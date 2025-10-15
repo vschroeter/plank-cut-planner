@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
-import { isPositive, isNonNegative, isIntegerAtLeast, validatePlankSKU, validateRequiredPiece, validateSettings } from '@/lib/validation'
+import { describe, expect, it } from 'vitest'
+import { isIntegerAtLeast, isNonNegative, isPositive, validatePlankSKU, validateRequiredPiece, validateSettings } from '@/lib/validation'
 
 describe('validation helpers', () => {
   it('validates positive dimensions', () => {
@@ -45,5 +45,3 @@ describe('validation helpers', () => {
     expect(bad.length).toBeGreaterThan(0)
   })
 })
-
-

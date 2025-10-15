@@ -1,11 +1,11 @@
-import { describe, it, expect, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
 import { createTestingPinia } from '@pinia/testing'
+import { mount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { createRouter, createWebHistory } from 'vue-router'
 import { createVuetify } from 'vuetify'
-import 'vuetify/styles'
 import App from '@/App.vue'
 import { usePlannerStore } from '@/stores/planner'
-import { createRouter, createWebHistory } from 'vue-router'
+import 'vuetify/styles'
 
 describe('App happy path', () => {
   beforeEach(() => {
@@ -36,5 +36,3 @@ describe('App happy path', () => {
     expect(store.totalCuts).toBeGreaterThanOrEqual(1)
   })
 })
-
-
