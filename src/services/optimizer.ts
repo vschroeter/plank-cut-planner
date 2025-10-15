@@ -166,7 +166,63 @@ export function computeOptimalPlan (input: ComputeInput): ComputeResult {
   // const cutPlan: CutPlan = { items: [], totalCost: 0, totalCuts: 0 }
   const errors: string[] = []
 
+  // Visit statistics grouped by remaining required pieces signature
+  type GroupStats = {
+    polled: number
+    uniqueVisited: number
+    duplicates: number
+    enqueueNewPlank: number
+    enqueueExistingPlank: number
+    minCost: number
+    maxCost: number
+    examplePiecesLeft: Array<{ widthMm: number, lengthMm: number }>
+  }
+  const visitStatsByPiecesLeft = new Map<string, GroupStats>()
+  let totalPolled = 0
+  let totalUniqueVisited = 0
+  let totalDuplicates = 0
+
+  const getPiecesLeftKey = (pieces: PlankDimension[]): string => pieces.map(p => p.hash).join('|')
+  const ensureGroup = (key: string, pieces: PlankDimension[], cost: number): GroupStats => {
+    const existing = visitStatsByPiecesLeft.get(key)
+    if (existing) {
+      existing.minCost = Math.min(existing.minCost, cost)
+      existing.maxCost = Math.max(existing.maxCost, cost)
+      return existing
+    }
+    const created: GroupStats = {
+      polled: 0,
+      uniqueVisited: 0,
+      duplicates: 0,
+      enqueueNewPlank: 0,
+      enqueueExistingPlank: 0,
+      minCost: cost,
+      maxCost: cost,
+      examplePiecesLeft: pieces.map(p => ({ widthMm: p.widthMm, lengthMm: p.lengthMm })),
+    }
+    visitStatsByPiecesLeft.set(key, created)
+    return created
+  }
+  const finalizeAndLog = (): void => {
+    const byPiecesLeft = Array.from(visitStatsByPiecesLeft.entries()).map(([key, stats]) => ({
+      key,
+      ...stats,
+    })).toSorted((a, b) => b.polled - a.polled || b.uniqueVisited - a.uniqueVisited)
+    const summary = {
+      totals: {
+        polled: totalPolled,
+        uniqueVisited: totalUniqueVisited,
+        duplicates: totalDuplicates,
+        groups: byPiecesLeft.length,
+      },
+      byPiecesLeft,
+    }
+    // Single consolidated log output for optimizer visit stats
+    console.log(summary)
+  }
+
   if (requiredPieces.length === 0) {
+    finalizeAndLog()
     return { planksToBePurchased: [], errors }
   }
 
@@ -178,108 +234,142 @@ export function computeOptimalPlan (input: ComputeInput): ComputeResult {
     }
   }
 
-  // Sort the required planks by length descending, starting with the longest
-  const sortedRequiredPieces = [...requiredPiecesAsDimensions].toSorted((a, b) => b.lengthMm - a.lengthMm)
-  const _maxLengthMm = sortedRequiredPieces[0]!.lengthMm
-  const minLengthMm = sortedRequiredPieces.at(-1)!.lengthMm
+  // We want to execute the optimizer for each unique width separately
+  const uniqueWidths = [...new Set(requiredPiecesAsDimensions.map(p => p.widthMm))]
+  console.log('Unique widths', uniqueWidths)
 
-  console.log('Sorted required pieces', sortedRequiredPieces)
+  const results: ComputeResult[] = uniqueWidths.map(width => {
+    console.log('Processing width', width)
+    const widthRequiredPieces = requiredPiecesAsDimensions.filter(p => p.widthMm === width)
 
-  // Pre-validate feasibility: widths and lengths
-  const availableByWidth = new Map<number, Plank[]>()
-  for (const [plank, amount] of availablePlanks.availablePlankAmount.entries()) {
-    if (amount === null || amount > 0) {
-      const list = availableByWidth.get(plank.widthMm) ?? []
-      list.push(plank)
-      availableByWidth.set(plank.widthMm, list)
+    // Sort the required planks by length descending, starting with the longest
+    const sortedRequiredPieces = [...widthRequiredPieces].toSorted((a, b) => b.widthMm - a.widthMm || b.lengthMm - a.lengthMm)
+    const _maxLengthMm = sortedRequiredPieces[0]!.lengthMm
+    const minLengthMm = sortedRequiredPieces.at(-1)!.lengthMm
+
+    console.log('Sorted required pieces', sortedRequiredPieces)
+
+    // Pre-validate feasibility: widths and lengths
+    const availableByWidth = new Map<number, Plank[]>()
+    for (const [plank, amount] of availablePlanks.availablePlankAmount.entries()) {
+      if (amount === null || amount > 0) {
+        const list = availableByWidth.get(plank.widthMm) ?? []
+        list.push(plank)
+        availableByWidth.set(plank.widthMm, list)
+      }
     }
-  }
 
-  const missingWidthErrors = new Set<string>()
-  const noFitLengthErrors = new Set<string>()
-  for (const req of requiredPieces) {
-    const candidates = availableByWidth.get(req.widthMm) ?? []
-    if (candidates.length === 0) {
-      missingWidthErrors.add(`No available planks with width ${req.widthMm}mm for required pieces`)
-      continue
+    const missingWidthErrors = new Set<string>()
+    const noFitLengthErrors = new Set<string>()
+    for (const req of requiredPieces) {
+      const candidates = availableByWidth.get(req.widthMm) ?? []
+      if (candidates.length === 0) {
+        missingWidthErrors.add(`No available planks with width ${req.widthMm}mm for required pieces`)
+        continue
+      }
+      const hasFit = candidates.some(p => p.lengthMm >= req.lengthMm)
+      if (!hasFit) {
+        noFitLengthErrors.add(`No plank of width ${req.widthMm}mm has length ≥ ${req.lengthMm}mm`)
+      }
     }
-    const hasFit = candidates.some(p => p.lengthMm >= req.lengthMm)
-    if (!hasFit) {
-      noFitLengthErrors.add(`No plank of width ${req.widthMm}mm has length ≥ ${req.lengthMm}mm`)
-    }
-  }
 
-  errors.push(...missingWidthErrors, ...noFitLengthErrors)
-  if (errors.length > 0) {
+    errors.push(...missingWidthErrors, ...noFitLengthErrors)
+    if (errors.length > 0) {
+      finalizeAndLog()
+      return { planksToBePurchased: [], errors }
+    }
+
+    const initialNode: HeapNode = new HeapNode({
+      requiredPiecesLeft: sortedRequiredPieces,
+      planksToBePurchased: [],
+      totalPrice: 0,
+      storage: availablePlanks.copy(),
+      previousNode: null,
+    })
+
+    const queue = new Heap<HeapNode>([initialNode], {
+      comparator: (a, b) => {
+        if (a.totalPrice == b.totalPrice) {
+          return a.planksToBePurchased.length - b.planksToBePurchased.length
+        }
+        return a.totalPrice - b.totalPrice
+      },
+    })
+
+    const visited = new Set<string>()
+
+    // return { planksToBePurchased: [] }
+
+    while (queue.size > 0) {
+      const currentNode = queue.poll()
+
+      if (!currentNode) {
+        break
+      }
+
+      const requiredPiecesLeft = currentNode.requiredPiecesLeft
+      const _currentTotalCost = currentNode.totalPrice
+      const availableStorage = currentNode.storage
+
+      // Update group-level poll stats
+      const groupKey = getPiecesLeftKey(requiredPiecesLeft)
+      const groupStats = ensureGroup(groupKey, requiredPiecesLeft, _currentTotalCost)
+      groupStats.polled += 1
+      totalPolled += 1
+
+      // If we have no required pieces, we have found a solution
+      if (requiredPiecesLeft.length === 0) {
+        totalUniqueVisited = visited.size
+        finalizeAndLog()
+        return { planksToBePurchased: currentNode.planksToBePurchased, errors }
+      }
+
+      // Check if we have already visited this node
+      const hash = currentNode.getVisitedHash(minLengthMm)
+      if (visited.has(hash)) {
+        groupStats.duplicates += 1
+        totalDuplicates += 1
+        continue
+      }
+
+      visited.add(hash)
+      groupStats.uniqueVisited += 1
+
+      const currentPiece = requiredPiecesLeft[0]!
+      // const restRequiredPieces = requiredPiecesLeft.slice(1)
+
+      // Create possible next nodes
+      let newPlankAdds = 0
+      for (const plank of availableStorage.availablePlanks) {
+        if (plank.lengthMmLeft >= currentPiece.lengthMm && plank.widthMm == currentPiece.widthMm) {
+          const nextNode = currentNode.createNextNodeWithNewPlank(plank, settings)
+          queue.add(nextNode)
+          newPlankAdds += 1
+        }
+      }
+      groupStats.enqueueNewPlank += newPlankAdds
+
+      let existingPlankAdds = 0
+      for (const plank of currentNode.planksToBePurchased) {
+        if (plank.lengthMmLeft >= currentPiece.lengthMm && plank.widthMm == currentPiece.widthMm) {
+          const nextNode = currentNode.createNextNodeWithExistingPlank(plank, settings)
+          queue.add(nextNode)
+          existingPlankAdds += 1
+        }
+      }
+      groupStats.enqueueExistingPlank += existingPlankAdds
+    }
+
+    // If we exhaust the search without a solution, report as unsatisfiable
+    errors.push('Not enough material to satisfy all required pieces')
+    totalUniqueVisited = visited.size
+    finalizeAndLog()
     return { planksToBePurchased: [], errors }
-  }
-
-  const initialNode: HeapNode = new HeapNode({
-    requiredPiecesLeft: sortedRequiredPieces,
-    planksToBePurchased: [],
-    totalPrice: 0,
-    storage: availablePlanks.copy(),
-    previousNode: null,
   })
 
-  const queue = new Heap<HeapNode>([initialNode], {
-    comparator: (a, b) => {
-      if (a.totalPrice == b.totalPrice) {
-        return a.planksToBePurchased.length - b.planksToBePurchased.length
-      }
-      return a.totalPrice - b.totalPrice
-    },
-  })
-
-  const visited = new Set<string>()
-
-  // return { planksToBePurchased: [] }
-
-  while (queue.size > 0) {
-    const currentNode = queue.poll()
-
-    if (!currentNode) {
-      break
-    }
-
-    const requiredPiecesLeft = currentNode.requiredPiecesLeft
-    const _currentTotalCost = currentNode.totalPrice
-    const availableStorage = currentNode.storage
-
-    // If we have no required pieces, we have found a solution
-    if (requiredPiecesLeft.length === 0) {
-      console.log('Visited', visited.size)
-      return { planksToBePurchased: currentNode.planksToBePurchased, errors }
-    }
-
-    // Check if we have already visited this node
-    const hash = currentNode.getVisitedHash(minLengthMm)
-    if (visited.has(hash)) {
-      continue
-    }
-
-    visited.add(hash)
-
-    const currentPiece = requiredPiecesLeft[0]!
-    // const restRequiredPieces = requiredPiecesLeft.slice(1)
-
-    // Create possible next nodes
-    for (const plank of availableStorage.availablePlanks) {
-      if (plank.lengthMmLeft >= currentPiece.lengthMm && plank.widthMm == currentPiece.widthMm) {
-        const nextNode = currentNode.createNextNodeWithNewPlank(plank, settings)
-        queue.add(nextNode)
-      }
-    }
-
-    for (const plank of currentNode.planksToBePurchased) {
-      if (plank.lengthMmLeft >= currentPiece.lengthMm && plank.widthMm == currentPiece.widthMm) {
-        const nextNode = currentNode.createNextNodeWithExistingPlank(plank, settings)
-        queue.add(nextNode)
-      }
-    }
-  }
-
-  // If we exhaust the search without a solution, report as unsatisfiable
-  errors.push('Not enough material to satisfy all required pieces')
-  return { planksToBePurchased: [], errors }
+  return results.reduce((acc, result) => {
+    acc.planksToBePurchased.push(...result.planksToBePurchased)
+    acc.errors.push(...result.errors)
+    return acc
+  }, { planksToBePurchased: [], errors: [] } as ComputeResult)
 }
