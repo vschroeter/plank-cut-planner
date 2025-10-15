@@ -34,7 +34,18 @@ export const usePlannerStore = defineStore('planner', () => {
   const computeErrors = ref<string[]>([])
 
   const sortedAvailablePlanks = computed(() => availablePlanks.value.toSorted(sortPlanks))
-  const totalCuts = computed<number>(() => cutPlan.value.totalCuts)
+  // Total cuts equal the number of pieces across all planned planks
+  const totalCuts = computed<number>(() => plankPlan.value.reduce((sum, plank) => {
+    if (!plank.pieces) {
+      return sum
+    }
+
+    if (plank.pieces.length == 1 && plank.pieces[0]?.lengthMm == plank.lengthMm) {
+      return sum
+    }
+
+    return sum + plank.pieces.length
+  }, 0))
 
   function computePlans (): void {
     const start = performance.now()
