@@ -3,42 +3,86 @@
     <v-toolbar class="sticky-header" density="compact" flat>
       <v-toolbar-title>Required Pieces</v-toolbar-title>
       <v-spacer />
-      <v-btn
-        class="mx-1"
-        icon="mdi-delete-sweep"
-        :title="'Clear All Pieces'"
-        variant="text"
-        @click="confirmClear = true"
-      />
-      <v-btn icon="mdi-plus" :title="'Add Piece'" variant="text" @click="add" />
+      <v-tooltip location="bottom" open-delay="500" text="Export CSV">
+        <template #activator="{ props }">
+          <v-btn
+            class="mx-1"
+            icon="mdi-download"
+            variant="text"
+            v-bind="props"
+            @click="exportCsv"
+          />
+        </template>
+      </v-tooltip>
+      <v-tooltip location="bottom" open-delay="500" text="Import CSV">
+        <template #activator="{ props }">
+          <v-btn
+            class="mx-1"
+            icon="mdi-upload"
+            variant="text"
+            v-bind="props"
+            @click="triggerImport"
+          />
+        </template>
+      </v-tooltip>
+      <v-tooltip location="bottom" open-delay="500" text="Clear All Pieces">
+        <template #activator="{ props }">
+          <v-btn
+            class="mx-1"
+            icon="mdi-delete-sweep"
+            variant="text"
+            v-bind="props"
+            @click="confirmClear = true"
+          />
+        </template>
+      </v-tooltip>
+      <v-tooltip location="bottom" open-delay="500" text="Add Piece">
+        <template #activator="{ props }">
+          <v-btn
+            icon="mdi-plus"
+            variant="text"
+            v-bind="props"
+            @click="add"
+          />
+        </template>
+      </v-tooltip>
     </v-toolbar>
     <v-divider />
-    <v-card-text>
-      <v-skeleton-loader v-if="loading" class="rounded-xl" type="table" />
-      <v-data-table
-        v-else
-        density="compact"
-        :headers="headers"
-        hide-default-footer
-        item-key="key"
-        :items="rows"
-        :items-per-page="-1"
+    <v-card-text ref="refCardText" :style="{ minHeight: ui.syncedTablesMinPx ? (ui.syncedTablesMinPx + 'px') : undefined, maxHeight: ui.syncedTablesMaxPx ? (ui.syncedTablesMaxPx + 'px') : undefined }">
+      <input
+        ref="refFile"
+        accept=".csv,text/csv"
+        style="display:none"
+        type="file"
+        @change="onImportFileChange"
       >
-        <template #item.widthMm="{ value, item }"><div @dblclick="edit(item)"><v-chip label>{{ value }} mm</v-chip></div></template>
-        <template #item.lengthMm="{ value, item }"><div @dblclick="edit(item)"><v-chip label>{{ value }} mm</v-chip></div></template>
-        <template #item.quantity="{ value, item }"><div class="text-right font-mono" @dblclick="edit(item)">{{ value }}</div></template>
-        <template #item.comment="{ value, item }"><div @dblclick="edit(item)">{{ value }}</div></template>
-        <template #item.actions="{ item }">
-          <v-menu>
-            <template #activator="{ props }"><v-btn icon="mdi-dots-vertical" v-bind="props" variant="text" /></template>
-            <v-list density="compact">
-              <v-list-item prepend-icon="mdi-pencil" title="Edit" @click="edit(item)" />
-              <v-list-item prepend-icon="mdi-content-copy" title="Duplicate" @click="dup(item)" />
-              <v-list-item prepend-icon="mdi-delete" title="Delete" @click="removeByIndex(item._idx)" />
-            </v-list>
-          </v-menu>
-        </template>
-      </v-data-table>
+      <div ref="refTableWrap">
+        <v-skeleton-loader v-if="loading" class="rounded-xl" type="table" />
+        <v-data-table
+          v-else
+          density="compact"
+          :headers="headers"
+          hide-default-footer
+          item-key="key"
+          :items="rows"
+          :items-per-page="-1"
+        >
+          <template #item.widthMm="{ value, item }"><div @dblclick="edit(item)"><v-chip label>{{ value }} mm</v-chip></div></template>
+          <template #item.lengthMm="{ value, item }"><div @dblclick="edit(item)"><v-chip label>{{ value }} mm</v-chip></div></template>
+          <template #item.quantity="{ value, item }"><div class="text-right font-mono" @dblclick="edit(item)">{{ value }}</div></template>
+          <template #item.comment="{ value, item }"><div @dblclick="edit(item)">{{ value }}</div></template>
+          <template #item.actions="{ item }">
+            <v-menu>
+              <template #activator="{ props }"><v-btn icon="mdi-dots-vertical" v-bind="props" variant="text" /></template>
+              <v-list density="compact">
+                <v-list-item prepend-icon="mdi-pencil" title="Edit" @click="edit(item)" />
+                <v-list-item prepend-icon="mdi-content-copy" title="Duplicate" @click="dup(item)" />
+                <v-list-item prepend-icon="mdi-delete" title="Delete" @click="removeByIndex(item._idx)" />
+              </v-list>
+            </v-menu>
+          </template>
+        </v-data-table>
+      </div>
       <div class="text-center my-2">
         <v-btn color="primary" prepend-icon="mdi-plus" @click="add">Add Piece</v-btn>
       </div>
@@ -103,7 +147,12 @@
 </template>
 
 <script lang="ts" setup>
-  import { computed, reactive, ref } from 'vue'
+  import { useResizeObserver } from '@vueuse/core'
+  import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
+  import { buildCsv, downloadTextFile, parseCsv, readFileAsText } from '@/lib/csv'
+  import { fileSafeTimestamp } from '@/lib/datetime'
+  import { parseFlexibleNumber } from '@/lib/number'
+  import { withAutoRecomputeDisabled } from '@/lib/storeImport'
   import { validateRequiredPiece } from '@/lib/validation'
   import { usePlannerStore } from '@/stores/planner'
   import { useUiStore } from '@/stores/ui'
@@ -135,6 +184,41 @@
   const isEditing = ref(false)
   const editIndex = ref<number | null>(null)
   const confirmClear = ref(false)
+  const refFile = ref<HTMLInputElement | null>(null)
+
+  const refCardText = ref<HTMLElement | null>(null)
+  const refTableWrap = ref<HTMLElement | null>(null)
+
+  function measureAndSyncHeights (): void {
+    if (!refTableWrap.value || !refCardText.value) return
+    const tableEl = refTableWrap.value.querySelector('table') as HTMLTableElement | null
+    const thead = tableEl?.querySelector('thead') as HTMLElement | null
+    const firstRow = tableEl?.querySelector('tbody tr') as HTMLElement | null
+    const headerHeight = thead?.getBoundingClientRect().height ?? 0
+    const rowHeight = firstRow?.getBoundingClientRect().height ?? 40
+    const minHeight = Math.ceil(headerHeight + rowHeight * 5)
+    const contentHeight = Math.ceil(refCardText.value.getBoundingClientRect().height)
+    if (Number.isFinite(minHeight) && minHeight > 0) ui.syncedTablesMinPx = minHeight
+    if (Number.isFinite(contentHeight) && contentHeight > 0) ui.syncedTablesMaxPx = contentHeight
+  }
+
+  onMounted(async () => {
+    await nextTick()
+    measureAndSyncHeights()
+  })
+
+  useResizeObserver(refCardText, () => {
+    measureAndSyncHeights()
+  })
+
+  useResizeObserver(refTableWrap, () => {
+    measureAndSyncHeights()
+  })
+
+  watch(rows, async () => {
+    await nextTick()
+    measureAndSyncHeights()
+  }, { deep: true })
 
   const form = reactive({
     widthMm: 100 as number,
@@ -235,6 +319,59 @@
   function doClearAll (): void {
     store.clearRequiredPieces()
     confirmClear.value = false
+  }
+
+  function exportCsv (): void {
+    const headers = ['widthMm', 'lengthMm', 'quantity', 'comment']
+    const rows = store.requiredPieces.map(p => ({
+      widthMm: p.widthMm,
+      lengthMm: p.lengthMm,
+      quantity: p.quantity,
+      comment: p.comment ?? '',
+    }))
+    const csv = buildCsv(headers, rows)
+    downloadTextFile(csv, `required-pieces-${fileSafeTimestamp()}.csv`)
+  }
+
+  function triggerImport (): void {
+    refFile.value?.click()
+  }
+
+  async function onImportFileChange (ev: Event): Promise<void> {
+    const input = ev.target as HTMLInputElement
+    const file = input.files && input.files[0]
+    if (!file) return
+    try {
+      const text = await readFileAsText(file)
+      const rows = parseCsv(text)
+      if (rows.length === 0) return
+      const first: string[] = rows[0] ?? []
+      const header = first.map(h => h.trim())
+      const idx = (name: string) => header.findIndex(h => h.toLowerCase() === name.toLowerCase())
+      const iWidth = idx('widthMm')
+      const iLength = idx('lengthMm')
+      const iQty = idx('quantity')
+      const iComment = idx('comment')
+      if (iWidth < 0 || iLength < 0 || iQty < 0) return
+
+      await withAutoRecomputeDisabled(store as any, async () => {
+        for (let r = 1; r < rows.length; r++) {
+          const row = rows[r]
+          if (!row || row.length === 0) continue
+          const widthMm = parseFlexibleNumber(row[iWidth] ?? '')
+          const lengthMm = parseFlexibleNumber(row[iLength] ?? '')
+          const quantity = parseFlexibleNumber(row[iQty] ?? '')
+          const comment = iComment >= 0 ? (row[iComment] ?? '').trim() : ''
+          if (widthMm === null || lengthMm === null || quantity === null) continue
+          const qtyInt = Math.max(1, Math.round(quantity))
+          const errors = validateRequiredPiece({ widthMm, lengthMm, quantity: qtyInt })
+          if (errors.length > 0) continue
+          store.addRequiredPiece({ widthMm, lengthMm, quantity: qtyInt, comment: comment || null })
+        }
+      })
+    } finally {
+      if (refFile.value) refFile.value.value = ''
+    }
   }
 </script>
 

@@ -77,9 +77,16 @@
         <v-col>
           <div class="d-flex align-center mb-2">
             <v-chip v-if="meta.plank.availablePlank.articleNr" class="mr-2" label>{{ meta.plank.availablePlank.articleNr }}</v-chip>
+            <v-chip
+              v-if="meta.plank.isHalved"
+              class="mr-2"
+              color="red"
+              label
+              variant="tonal"
+            >halved plank</v-chip>
             <v-chip class="mr-2" label>{{ meta.plank.lengthMm }} × {{ meta.plank.widthMm }} mm</v-chip>
             <v-chip class="mr-2" color="secondary" label variant="tonal">kerf: {{ store.settings.sawKerfMm }} mm</v-chip>
-            <v-chip color="warning" label variant="tonal">waste: {{ wastePercent(meta.plank) }}%</v-chip>
+            <v-chip class="mr-2" color="warning" label variant="tonal">waste: {{ wastePercent(meta.plank) }}%</v-chip>
           </div>
           <PlankVisualization :max-plank-length="maxPlankLength" :plank="meta.plank" :plank-idx="meta.originalIndex" :width-reference="widthReference" />
         </v-col>
@@ -121,7 +128,7 @@
 
 <script lang="ts" setup>
   import { useResizeObserver } from '@vueuse/core'
-  import { buildCutPlanMarkdown } from '@/lib/exportMarkdown'
+  import { buildFullMarkdown } from '@/lib/exportMarkdown'
   import { usePlannerStore } from '@/stores/planner'
   import PlankVisualization from './PlankVisualization.vue'
   const store = usePlannerStore()
@@ -186,7 +193,13 @@
   })
 
   function onExportMarkdown (): void {
-    const md = buildCutPlanMarkdown(store.plankPlan, store.requiredPieces, store.settings.unitSystem)
+    const md = buildFullMarkdown(
+      store.plankPlan,
+      store.requiredPieces,
+      store.purchasePlan,
+      store.settings.unitSystem,
+      store.settings.currency,
+    )
     const blob = new Blob([md], { type: 'text/markdown' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -197,7 +210,7 @@
     const hh = String(ts.getHours()).padStart(2, '0')
     const mm = String(ts.getMinutes()).padStart(2, '0')
     a.href = url
-    a.download = `cut-plan-${y}${m}${d}-${hh}${mm}.md`
+    a.download = `plan-${y}${m}${d}-${hh}${mm}.md`
     a.click()
     URL.revokeObjectURL(url)
   }

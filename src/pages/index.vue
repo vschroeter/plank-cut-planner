@@ -133,24 +133,14 @@
       </v-alert>
     </div>
     <v-row dense>
-      <v-col cols="12" lg="6" order="-1" order-lg="0"><CutPlanView /></v-col>
-      <v-col cols="12" lg="3"><RequiredPiecesTable /></v-col>
-      <v-col cols="12" lg="3"><AvailablePlanksTable /></v-col>
-    </v-row>
-    <v-row class="mt-3 d-lg-none">
-      <v-col cols="12">
-        <v-expansion-panels>
-          <v-expansion-panel>
-            <v-expansion-panel-title>Purchase Plan</v-expansion-panel-title>
-            <v-expansion-panel-text>
-              <PurchasePlanTable />
-            </v-expansion-panel-text>
-          </v-expansion-panel>
-        </v-expansion-panels>
+      <v-col cols="12" lg="6">
+        <v-row dense>
+          <v-col cols="12" lg="6"><RequiredPiecesTable /></v-col>
+          <v-col cols="12" lg="6"><AvailablePlanksTable /></v-col>
+          <v-col class="mt-3" cols="12"><PurchasePlanTable /></v-col>
+        </v-row>
       </v-col>
-    </v-row>
-    <v-row class="mt-3 d-none d-lg-flex">
-      <v-col cols="12"><PurchasePlanTable /></v-col>
+      <v-col cols="12" lg="6" order="-1" order-lg="0"><CutPlanView /></v-col>
     </v-row>
   </v-container>
 </template>
@@ -162,7 +152,7 @@
   import GlobalSettingsCard from '@/components/GlobalSettingsCard.vue'
   import PurchasePlanTable from '@/components/PurchasePlanTable.vue'
   import RequiredPiecesTable from '@/components/RequiredPiecesTable.vue'
-  import { buildCutPlanMarkdown } from '@/lib/exportMarkdown'
+  import { buildFullMarkdown } from '@/lib/exportMarkdown'
   import { usePlannerStore } from '@/stores/planner'
   const store = usePlannerStore()
 
@@ -182,7 +172,13 @@
     URL.revokeObjectURL(url)
   }
   function onExportMarkdown (): void {
-    const md = buildCutPlanMarkdown(store.plankPlan, store.requiredPieces, store.settings.unitSystem)
+    const md = buildFullMarkdown(
+      store.plankPlan,
+      store.requiredPieces,
+      store.purchasePlan,
+      store.settings.unitSystem,
+      store.settings.currency,
+    )
     const blob = new Blob([md], { type: 'text/markdown' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -193,7 +189,7 @@
     const hh = String(ts.getHours()).padStart(2, '0')
     const mm = String(ts.getMinutes()).padStart(2, '0')
     a.href = url
-    a.download = `cut-plan-${y}${m}${d}-${hh}${mm}.md`
+    a.download = `plan-${y}${m}${d}-${hh}${mm}.md`
     a.click()
     URL.revokeObjectURL(url)
   }

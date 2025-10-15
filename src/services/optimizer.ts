@@ -60,7 +60,34 @@ class HeapNode {
     return new HeapNode({
       requiredPiecesLeft,
       planksToBePurchased: [...this.planksToBePurchased, plank],
-      storage: this.storage.copy(),
+      storage: this.storage.copy().removePlank(plank),
+      previousNode: this,
+      totalPrice: this.totalPrice + plank.availablePlank.pricePerPiece,
+    })
+  }
+
+  createNextNodeWithNewHalvePlank (plank: Plank, settings: GlobalSettings) {
+    // Remove first required piece from requiredPiecesLeft
+    const requiredPiecesLeft = [...this.requiredPiecesLeft]
+    const currentRequiredPiece = requiredPiecesLeft.shift()
+
+    if (!currentRequiredPiece) {
+      throw new Error('No required piece left')
+    }
+
+    const { plank1, plank2 } = plank.halve()
+
+    const _plankPiece = new PlankPiece({
+      widthMm: currentRequiredPiece.widthMm,
+      lengthMm: currentRequiredPiece.lengthMm,
+      cutWidthMm: settings.sawKerfMm,
+    })
+    plank1.addPiece(_plankPiece)
+
+    return new HeapNode({
+      requiredPiecesLeft,
+      planksToBePurchased: [...this.planksToBePurchased, plank1, plank2],
+      storage: this.storage.copy().removePlank(plank),
       previousNode: this,
       totalPrice: this.totalPrice + plank.availablePlank.pricePerPiece,
     })
@@ -263,6 +290,14 @@ export function computeOptimalPlan (input: ComputeInput): ComputeResult {
     const noFitLengthErrors = new Set<string>()
     for (const req of requiredPieces) {
       const candidates = availableByWidth.get(req.widthMm) ?? []
+
+      // If halving is allowed, add available planks with doubled width
+      if (settings.allowHalving) {
+        const doubledWidth = req.widthMm * 2
+        const candidatesDoubled = availableByWidth.get(doubledWidth) ?? []
+        candidates.push(...candidatesDoubled)
+      }
+
       if (candidates.length === 0) {
         missingWidthErrors.add(`No available planks with width ${req.widthMm}mm for required pieces`)
         continue
@@ -341,10 +376,16 @@ export function computeOptimalPlan (input: ComputeInput): ComputeResult {
       // Create possible next nodes
       let newPlankAdds = 0
       for (const plank of availableStorage.availablePlanks) {
-        if (plank.lengthMmLeft >= currentPiece.lengthMm && plank.widthMm == currentPiece.widthMm) {
-          const nextNode = currentNode.createNextNodeWithNewPlank(plank, settings)
-          queue.add(nextNode)
-          newPlankAdds += 1
+        if (plank.lengthMmLeft >= currentPiece.lengthMm) {
+          if (plank.widthMm == currentPiece.widthMm) {
+            const nextNode = currentNode.createNextNodeWithNewPlank(plank, settings)
+            queue.add(nextNode)
+            newPlankAdds += 1
+          } else if (settings.allowHalving && plank.widthMm == currentPiece.widthMm * 2) {
+            const nextNode = currentNode.createNextNodeWithNewHalvePlank(plank, settings)
+            queue.add(nextNode)
+            newPlankAdds += 1
+          }
         }
       }
       groupStats.enqueueNewPlank += newPlankAdds

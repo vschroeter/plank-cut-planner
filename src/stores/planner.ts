@@ -1,4 +1,4 @@
-import type { GlobalSettings, PieceIdentity, PurchasePlanItem, RequiredPieceInput } from '@/types/planner'
+import type { AvailablePlank, GlobalSettings, PieceIdentity, PurchasePlanItem, RequiredPieceInput } from '@/types/planner'
 import { useLocalStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref, toRaw } from 'vue'
@@ -6,7 +6,7 @@ import { sortPlanks } from '@/lib/sorting'
 import { computeOptimalPlan } from '@/services/optimizer'
 import { AvailablePlank as AvailablePlankClass, Plank, PlankStorage } from '@/types/planner'
 
-const defaultSettings: GlobalSettings = { sawKerfMm: 3, unitSystem: 'mm', currency: '€' }
+const defaultSettings: GlobalSettings = { sawKerfMm: 3, unitSystem: 'mm', currency: '€', allowHalving: true }
 
 export const usePlannerStore = defineStore('planner', () => {
   // UI-facing available plank input shape
@@ -80,14 +80,25 @@ export const usePlannerStore = defineStore('planner', () => {
 
     const elapsed = performance.now() - start
     // Aggregate planks to be purchased into purchasePlan items
-    const grouped = new Map<string, { plank: Plank, quantity: number }>()
+    // const grouped = new Map<string, { plank: Plank, quantity: number }>()
+    const grouped = new Map<string, { plank: AvailablePlank, quantity: number }>()
+    const addedPlanks = new Set<Plank>()
     for (const plank of result.planksToBePurchased) {
+      if (addedPlanks.has(plank)) {
+        continue
+      }
+      addedPlanks.add(plank)
+      if (plank.otherHalf) {
+        addedPlanks.add(plank.otherHalf)
+      }
+
       const key = plank.availablePlank.completeHash
       const entry = grouped.get(key)
       if (entry) {
         entry.quantity += 1
       } else {
-        grouped.set(key, { plank, quantity: 1 })
+        // grouped.set(key, { plank, quantity: 1 })
+        grouped.set(key, { plank: plank.availablePlank, quantity: 1 })
       }
     }
     purchasePlan.value = Array.from(grouped.values())
@@ -166,6 +177,9 @@ export const usePlannerStore = defineStore('planner', () => {
   }
   function setCurrency (symbol: string): void {
     settings.value.currency = symbol
+  }
+  function setAllowHalving (value: boolean): void {
+    settings.value.allowHalving = value
   }
   function toggleAutoRecompute (value?: boolean): void {
     const next = value ?? !autoRecompute.value
@@ -271,6 +285,7 @@ export const usePlannerStore = defineStore('planner', () => {
     setSawKerf,
     setUnitSystem,
     setCurrency,
+    setAllowHalving,
     toggleAutoRecompute,
     markPieceDone,
     resetAllDone,

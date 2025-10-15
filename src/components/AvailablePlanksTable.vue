@@ -3,17 +3,59 @@
     <v-toolbar class="sticky-header" density="compact" flat>
       <v-toolbar-title>Available Planks</v-toolbar-title>
       <v-spacer />
-      <v-btn
-        class="mx-1"
-        icon="mdi-delete-sweep"
-        :title="'Clear All Planks'"
-        variant="text"
-        @click="confirmClear = true"
-      />
-      <v-btn icon="mdi-plus" :title="'Add Plank'" variant="text" @click="add" />
+      <v-tooltip location="bottom" open-delay="500" text="Export CSV">
+        <template #activator="{ props }">
+          <v-btn
+            class="mx-1"
+            icon="mdi-download"
+            variant="text"
+            v-bind="props"
+            @click="exportCsv"
+          />
+        </template>
+      </v-tooltip>
+      <v-tooltip location="bottom" open-delay="500" text="Import CSV">
+        <template #activator="{ props }">
+          <v-btn
+            class="mx-1"
+            icon="mdi-upload"
+            variant="text"
+            v-bind="props"
+            @click="triggerImport"
+          />
+        </template>
+      </v-tooltip>
+      <v-tooltip location="bottom" open-delay="500" text="Clear All Planks">
+        <template #activator="{ props }">
+          <v-btn
+            class="mx-1"
+            icon="mdi-delete-sweep"
+            variant="text"
+            v-bind="props"
+            @click="confirmClear = true"
+          />
+        </template>
+      </v-tooltip>
+      <v-tooltip location="bottom" open-delay="500" text="Add Plank">
+        <template #activator="{ props }">
+          <v-btn
+            icon="mdi-plus"
+            variant="text"
+            v-bind="props"
+            @click="add"
+          />
+        </template>
+      </v-tooltip>
     </v-toolbar>
     <v-divider />
-    <v-card-text>
+    <v-card-text :style="{ minHeight: ui.syncedTablesMinPx ? (ui.syncedTablesMinPx + 'px') : undefined, maxHeight: ui.syncedTablesMaxPx ? (ui.syncedTablesMaxPx + 'px') : undefined }">
+      <input
+        ref="refFile"
+        accept=".csv,text/csv"
+        style="display:none"
+        type="file"
+        @change="onImportFileChange"
+      >
       <v-skeleton-loader v-if="loading" class="rounded-xl" type="table" />
       <v-data-table
         v-else
@@ -116,6 +158,10 @@
 
 <script lang="ts" setup>
   import { computed, reactive, ref } from 'vue'
+  import { buildCsv, downloadTextFile, parseCsv, readFileAsText } from '@/lib/csv'
+  import { fileSafeTimestamp } from '@/lib/datetime'
+  import { parseFlexibleNumber } from '@/lib/number'
+  import { withAutoRecomputeDisabled } from '@/lib/storeImport'
   import { validatePlankSKU } from '@/lib/validation'
   import { usePlannerStore } from '@/stores/planner'
   import { useUiStore } from '@/stores/ui'
@@ -144,6 +190,7 @@
   const isEditing = ref(false)
   const editIndex = ref<number | null>(null)
   const confirmClear = ref(false)
+  const refFile = ref<HTMLInputElement | null>(null)
 
   const form = reactive({
     widthMm: 100 as number,
@@ -253,6 +300,63 @@
   function doClearAll (): void {
     store.clearAvailablePlanks()
     confirmClear.value = false
+  }
+
+  function exportCsv (): void {
+    const headers = ['widthMm', 'lengthMm', 'pricePerPiece', 'articleNr', 'availablePieces']
+    const rows = store.availablePlanks.map(p => ({
+      widthMm: p.widthMm,
+      lengthMm: p.lengthMm,
+      pricePerPiece: p.pricePerPiece,
+      articleNr: p.articleNr ?? '',
+      availablePieces: p.availablePieces === null ? '' : p.availablePieces,
+    }))
+    const csv = buildCsv(headers, rows)
+    downloadTextFile(csv, `available-planks-${fileSafeTimestamp()}.csv`)
+  }
+
+  function triggerImport (): void {
+    refFile.value?.click()
+  }
+
+  async function onImportFileChange (ev: Event): Promise<void> {
+    const input = ev.target as HTMLInputElement
+    const file = input.files && input.files[0]
+    if (!file) return
+    try {
+      const text = await readFileAsText(file)
+      const rows = parseCsv(text)
+      if (rows.length === 0) return
+      const first: string[] = rows[0] ?? []
+      const header = first.map(h => h.trim())
+      const idx = (name: string) => header.findIndex(h => h.toLowerCase() === name.toLowerCase())
+      const iWidth = idx('widthMm')
+      const iLength = idx('lengthMm')
+      const iPrice = idx('pricePerPiece')
+      const iArticle = idx('articleNr')
+      const iAvail = idx('availablePieces')
+      if (iWidth < 0 || iLength < 0 || iPrice < 0) return
+
+      await withAutoRecomputeDisabled(store as any, async () => {
+        for (let r = 1; r < rows.length; r++) {
+          const row = rows[r]
+          if (!row || row.length === 0) continue
+          const widthMm = parseFlexibleNumber(row[iWidth] ?? '')
+          const lengthMm = parseFlexibleNumber(row[iLength] ?? '')
+          const pricePerPiece = parseFlexibleNumber(row[iPrice] ?? '')
+          const articleRaw = iArticle >= 0 ? (row[iArticle] ?? '').trim() : ''
+          const availRaw = iAvail >= 0 ? (row[iAvail] ?? '').trim() : ''
+          const availablePieces = (availRaw === '' || availRaw === '∞') ? null : parseFlexibleNumber(availRaw)
+          const articleNr = articleRaw === '' ? null : articleRaw
+          if (widthMm === null || lengthMm === null || pricePerPiece === null) continue
+          const errors = validatePlankSKU({ widthMm, lengthMm, pricePerPiece, articleNr, availablePieces })
+          if (errors.length > 0) continue
+          store.addPlank({ widthMm, lengthMm, pricePerPiece, articleNr, availablePieces })
+        }
+      })
+    } finally {
+      if (refFile.value) refFile.value.value = ''
+    }
   }
 </script>
 

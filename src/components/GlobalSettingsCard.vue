@@ -15,6 +15,9 @@
         <v-col class="d-flex align-center" cols="12">
           <v-switch v-model="auto" inset label="Auto recompute" />
         </v-col>
+        <v-col cols="12" sm="4">
+          <v-switch v-model="allowHalving" inset label="Allow halving" />
+        </v-col>
       </v-row>
       <v-btn class="mt-2" :disabled="auto" @click="store.computePlans()">Compute Now</v-btn>
     </v-card-text>
@@ -44,5 +47,9 @@
   const currency = computed({
     get: () => store.settings.currency,
     set: (v: string) => store.setCurrency(v || '€'),
+  })
+  const allowHalving = computed({
+    get: () => store.settings.allowHalving,
+    set: (v: boolean) => store.setAllowHalving(v),
   })
 </script>

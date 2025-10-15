@@ -34,13 +34,16 @@ export class AvailablePlank extends PlankDimension {
 // A real world plank
 export class Plank extends PlankDimension {
   availablePlank: AvailablePlank
-
+  isHalved: boolean
+  otherHalf: Plank | null
   pieces: PlankPiece[]
 
   constructor ({ availablePlank, pieces = [] }: { availablePlank: AvailablePlank, pieces?: PlankPiece[] }) {
     super({ widthMm: availablePlank.widthMm, lengthMm: availablePlank.lengthMm })
     this.availablePlank = availablePlank
     this.pieces = pieces
+    this.isHalved = false
+    this.otherHalf = null
   }
 
   get lengthMmLeft () {
@@ -66,6 +69,20 @@ export class Plank extends PlankDimension {
 
   copy () {
     return new Plank({ availablePlank: this.availablePlank, pieces: [...this.pieces] })
+  }
+
+  halve () {
+    const plank1 = this.copy()
+    const plank2 = this.copy()
+    plank1.widthMm /= 2
+    plank2.widthMm /= 2
+    plank1.isHalved = true
+    plank2.isHalved = true
+
+    plank1.otherHalf = plank2
+    plank2.otherHalf = plank1
+
+    return { plank1, plank2 }
   }
 }
 
@@ -106,11 +123,13 @@ export class PlankStorage {
   addPlank (plank: Plank) {
     const amount = this.availablePlankAmount.get(plank) ?? null
     this.availablePlankAmount.set(plank, amount === null ? null : amount + 1)
+    return this
   }
 
   removePlank (plank: Plank) {
     const amount = this.availablePlankAmount.get(plank) ?? null
     this.availablePlankAmount.set(plank, amount === null ? null : amount - 1)
+    return this
   }
 }
 
@@ -126,10 +145,11 @@ export interface GlobalSettings {
   sawKerfMm: number
   unitSystem: 'mm' | 'inch'
   currency: string
+  allowHalving: boolean
 }
 
 export interface PurchasePlanItem {
-  plank: Plank
+  plank: AvailablePlank
   quantity: number
 }
 
