@@ -14,7 +14,9 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@fontsource/inter": "^5.2.8",
     "@fontsource/roboto": "5.2.7",
+    "@fontsource/roboto-mono": "^5.2.8",
     "@mdi/font": "7.4.47",
     "@vueuse/core": "^13.9.0",
     "data-structure-typed": "^2.0.4",

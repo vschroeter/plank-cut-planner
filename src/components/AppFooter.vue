@@ -1,29 +1,19 @@
 <template>
-  <v-footer
-    app
-    height="40"
-  >
-    <!-- <a
-      v-for="item in items"
-      :key="item.title"
-      class="d-inline-block mx-2 social-link"
-      :href="item.href"
-      rel="noopener noreferrer"
-      target="_blank"
-      :title="item.title"
-    >
-      <v-icon
-        :icon="item.icon"
-        :size="item.icon === '$vuetify' ? 24 : 16"
-      />
-    </a> -->
-
-    <v-spacer />
-    <span>{{ statusText }}</span>
-    <v-switch v-model="auto" class="mx-5" hide-details label="Auto" />
-    <v-btn :disabled="store.autoRecompute" size="small" @click="store.computePlans()">Compute</v-btn>
-
-    <v-spacer />
+  <v-footer app class="bg-surface-2" padless>
+    <v-container class="d-flex align-center">
+      <v-icon class="mr-2" icon="mdi-clock-outline" />
+      <span class="text-caption">{{ statusText }}</span>
+      <v-spacer />
+      <v-switch v-model="auto" hide-details inset label="Auto" />
+      <v-btn
+        class="ml-3"
+        color="primary"
+        :disabled="store.autoRecompute"
+        :loading="store.computeLoading"
+        prepend-icon="mdi-cpu-64-bit"
+        @click="store.computePlans()"
+      >Compute</v-btn>
+    </v-container>
   </v-footer>
 </template>
 

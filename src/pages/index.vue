@@ -1,36 +1,35 @@
 <template>
-  <v-container fluid>
-    <v-app-bar density="compact" flat>
-      <v-toolbar-title>Plank Cut Planner</v-toolbar-title>
-      <v-spacer />
-      <v-btn icon="mdi-download" :title="'Export JSON'" @click="onExport" />
-      <v-btn icon="mdi-file-document-outline" :title="'Export Markdown'" @click="onExportMarkdown" />
-      <v-btn icon="mdi-upload" :title="'Import JSON'" @click="triggerImport" />
-      <input
-        ref="importInput"
-        accept="application/json,.json"
-        style="display:none"
-        type="file"
-        @change="onImport"
-      >
-      <v-btn icon="mdi-cog" @click="settingsDialogOpen = true" />
-    </v-app-bar>
+  <v-app-bar density="compact" flat>
+    <v-app-bar-title>Plank Cut Planner</v-app-bar-title>
+    <v-spacer />
+    <v-btn icon="mdi-download" :title="'Export JSON'" variant="text" @click="onExport" />
+    <v-btn icon="mdi-file-document-outline" :title="'Export Markdown'" variant="text" @click="onExportMarkdown" />
+    <v-btn icon="mdi-upload" :title="'Import JSON'" variant="text" @click="triggerImport" />
+    <input
+      ref="importInput"
+      accept="application/json,.json"
+      style="display:none"
+      type="file"
+      @change="onImport"
+    >
+    <v-btn icon="mdi-cog-outline" variant="text" @click="settingsDialogOpen = true" />
+  </v-app-bar>
 
-    <!-- Settings Dialog -->
-    <v-dialog v-model="settingsDialogOpen" max-width="720">
-      <v-card>
-        <v-card-title>Settings</v-card-title>
-        <v-card-text>
-          <GlobalSettingsCard />
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn text="Close" @click="settingsDialogOpen = false" />
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+  <!-- Settings Dialog -->
+  <v-dialog v-model="settingsDialogOpen" max-width="720">
+    <v-card>
+      <v-card-title>Settings</v-card-title>
+      <v-card-text>
+        <GlobalSettingsCard />
+      </v-card-text>
+      <v-card-actions>
+        <v-spacer />
+        <v-btn text="Close" @click="settingsDialogOpen = false" />
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
 
-    <div class="planner-grid" :class="{ 'has-alerts': hasAlerts }">
+  <!-- <div class="planner-grid" :class="{ 'has-alerts': hasAlerts }">
       <div v-if="hasAlerts" class="grid-full">
         <v-alert
           class="mb-4"
@@ -61,7 +60,43 @@
       <div class="grid-right">
         <AvailablePlanksTable />
       </div>
+    </div> -->
+
+  <v-container class="py-4" fluid>
+    <div v-if="hasAlerts" class="grid-full">
+      <v-alert
+        class="mb-4"
+        density="comfortable"
+        type="error"
+      >
+        <div class="d-flex flex-column ga-1">
+          <div class="text-subtitle-2">Computation issues</div>
+          <ul class="ma-0 ps-4">
+            <li v-for="(msg, idx) in store.computeErrors" :key="idx">{{ msg }}</li>
+          </ul>
+        </div>
+      </v-alert>
     </div>
+    <v-row dense>
+      <v-col cols="12" lg="6" order="-1" order-lg="0"><CutPlanView /></v-col>
+      <v-col cols="12" lg="3"><RequiredPiecesTable /></v-col>
+      <v-col cols="12" lg="3"><AvailablePlanksTable /></v-col>
+    </v-row>
+    <v-row class="mt-3 d-lg-none">
+      <v-col cols="12">
+        <v-expansion-panels>
+          <v-expansion-panel>
+            <v-expansion-panel-title>Purchase Plan</v-expansion-panel-title>
+            <v-expansion-panel-text>
+              <PurchasePlanTable />
+            </v-expansion-panel-text>
+          </v-expansion-panel>
+        </v-expansion-panels>
+      </v-col>
+    </v-row>
+    <v-row class="mt-3 d-none d-lg-flex">
+      <v-col cols="12"><PurchasePlanTable /></v-col>
+    </v-row>
   </v-container>
 </template>
 

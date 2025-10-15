@@ -30,6 +30,7 @@ export const usePlannerStore = defineStore('planner', () => {
   const cutPlan = ref<{ items: any[], totalCost: number, totalCuts: number }>({ items: [], totalCost: 0, totalCuts: 0 })
   const lastComputedAt = ref<number | null>(null)
   const computeMs = ref<number | null>(null)
+  const computeLoading = ref<boolean>(false)
   const computeErrors = ref<string[]>([])
 
   const sortedAvailablePlanks = computed(() => availablePlanks.value.toSorted(sortPlanks))
@@ -37,6 +38,7 @@ export const usePlannerStore = defineStore('planner', () => {
 
   function computePlans (): void {
     const start = performance.now()
+    computeLoading.value = true
     // Build storage from UI-facing available planks
     const storage = new PlankStorage()
     for (const p of availablePlanks.value) {
@@ -51,12 +53,17 @@ export const usePlannerStore = defineStore('planner', () => {
       storage.availablePlankAmount.set(plank, amount)
     }
 
-    const result = computeOptimalPlan({
-      availablePlanks: storage,
-      storage,
-      requiredPieces: toRaw(requiredPieces.value),
-      settings: settings.value,
-    })
+    let result: ReturnType<typeof computeOptimalPlan>
+    try {
+      result = computeOptimalPlan({
+        availablePlanks: storage,
+        storage,
+        requiredPieces: toRaw(requiredPieces.value),
+        settings: settings.value,
+      })
+    } finally {
+      computeLoading.value = false
+    }
 
     computeErrors.value = result.errors ?? []
 
@@ -236,6 +243,7 @@ export const usePlannerStore = defineStore('planner', () => {
     plankPlan,
     lastComputedAt,
     computeMs,
+    computeLoading,
     computeErrors,
     // getters
     sortedAvailablePlanks,

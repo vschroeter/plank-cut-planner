@@ -1,20 +1,23 @@
 <template>
   <v-card>
-    <v-card-title class="d-flex align-center">
-      <span>Cut Plan (total cuts: {{ store.totalCuts }})</span>
+    <v-toolbar class="sticky-header" density="compact" flat>
+      <v-toolbar-title>Cut Plan</v-toolbar-title>
       <v-spacer />
-      <v-btn
-        border
-        icon="mdi-restore"
-        rounded="lg"
-        :title="'Reset marked pieces'"
-        @click="store.resetAllDone()"
-      />
-    </v-card-title>
+      <v-chip color="info" label>cuts: {{ store.totalCuts }}</v-chip>
+      <v-chip v-if="planks.length > 0" class="ml-2" color="success" label>waste: {{ wastePercentTotal }}%</v-chip>
+      <v-btn icon="mdi-restore" :title="'Reset marked pieces'" variant="text" @click="store.resetAllDone()" />
+    </v-toolbar>
+    <v-divider />
     <v-card-text ref="refCardContent">
 
-      <v-row v-for="plank, idx in planks" :key="idx">
+      <v-row v-for="plank, idx in planks" :key="idx" class="py-2">
         <v-col>
+          <div class="d-flex align-center mb-2">
+            <v-chip v-if="plank.availablePlank.articleNr" class="mr-2" label>{{ plank.availablePlank.articleNr }}</v-chip>
+            <v-chip class="mr-2" label>{{ plank.lengthMm }} × {{ plank.widthMm }} mm</v-chip>
+            <v-chip class="mr-2" color="secondary" label variant="tonal">kerf: {{ store.settings.sawKerfMm }} mm</v-chip>
+            <v-chip color="warning" label variant="tonal">waste: {{ wastePercent(plank) }}%</v-chip>
+          </div>
           <PlankVisualization :max-plank-length="maxPlankLength" :plank="plank" :plank-idx="idx" :width-reference="widthReference" />
         </v-col>
       </v-row>
@@ -78,4 +81,24 @@
     console.log(planks.value)
   })
 
+  function wastePercent (plank: any): number {
+    const used = plank.pieces.reduce((s: number, p: any) => s + p.lengthMm + p.cutWidthMm, 0)
+    const waste = Math.max(0, plank.lengthMm - used)
+    return Math.round((waste / plank.lengthMm) * 100)
+  }
+
+  const wastePercentTotal = computed(() => {
+    const totalLen = planks.value.reduce((s, p) => s + p.lengthMm, 0)
+    const used = planks.value.reduce((s, plank) => s + plank.pieces.reduce((x: number, p: any) => x + p.lengthMm + p.cutWidthMm, 0), 0)
+    if (totalLen === 0) return 0
+    return Math.round(((totalLen - used) / totalLen) * 100)
+  })
+
 </script>
+<style scoped>
+.sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+</style>

@@ -51,9 +51,14 @@ export default defineConfig({
       fontsource: {
         families: [
           {
-            name: 'Roboto',
-            weights: [100, 300, 400, 500, 700, 900],
-            styles: ['normal', 'italic'],
+            name: 'Inter',
+            weights: [100, 200, 300, 400, 500, 600, 700, 800, 900],
+            styles: ['normal'],
+          },
+          {
+            name: 'Roboto Mono',
+            weights: [300, 400, 500, 700],
+            styles: ['normal'],
           },
         ],
       },

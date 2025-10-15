@@ -1,26 +1,22 @@
 <template>
   <v-card class="fill-card">
-    <v-card-title class="d-flex align-center">
-      <span>Available Planks</span>
+    <v-toolbar class="sticky-header" density="compact" flat>
+      <v-toolbar-title>Available Planks</v-toolbar-title>
       <v-spacer />
       <v-btn
-        border
-        class="mx-2"
+        class="mx-1"
         icon="mdi-delete-sweep"
-        rounded="lg"
         :title="'Clear All Planks'"
+        variant="text"
         @click="confirmClear = true"
       />
-      <v-btn
-        border
-        icon="mdi-plus"
-        rounded="lg"
-        :title="'Add Plank'"
-        @click="add"
-      />
-    </v-card-title>
+      <v-btn icon="mdi-plus" :title="'Add Plank'" variant="text" @click="add" />
+    </v-toolbar>
+    <v-divider />
     <v-card-text>
+      <v-skeleton-loader v-if="loading" class="rounded-xl" type="table" />
       <v-data-table
+        v-else
         density="compact"
         :headers="headers"
         hide-default-footer
@@ -28,18 +24,26 @@
         :items="rows"
         :items-per-page="-1"
       >
+        <template #item.widthMm="{ value, item }"><div @dblclick="edit(item)"><v-chip label>{{ value }} mm</v-chip></div></template>
+        <template #item.lengthMm="{ value, item }"><div @dblclick="edit(item)"><v-chip label>{{ value }} mm</v-chip></div></template>
+        <template #item.pricePerPiece="{ value, item }"><div @dblclick="edit(item)"><v-chip color="primary" label variant="tonal">{{ value.toFixed(2) }} {{ store.settings.currency }}</v-chip></div></template>
+        <template #item.availablePieces="{ value, item }"><div @dblclick="edit(item)"><v-chip :color="value === null ? 'info' : 'success'" label variant="tonal">{{ value ?? '∞' }}</v-chip></div></template>
+        <template #item.articleNr="{ value, item }"><div @dblclick="edit(item)">{{ value }}</div></template>
         <template #item.actions="{ item }">
-          <div class="d-flex ga-2 justify-end">
-            <v-icon color="medium-emphasis" icon="mdi-pencil" size="small" @click="edit(item)" />
-            <v-icon color="medium-emphasis" icon="mdi-delete" size="small" @click="removeByIndex(item._idx)" />
-          </div>
+          <v-menu>
+            <template #activator="{ props }"><v-btn icon="mdi-dots-vertical" v-bind="props" variant="text" /></template>
+            <v-list density="compact">
+              <v-list-item prepend-icon="mdi-pencil" title="Edit" @click="edit(item)" />
+              <v-list-item prepend-icon="mdi-delete" title="Delete" @click="removeByIndex(item._idx)" />
+            </v-list>
+          </v-menu>
         </template>
       </v-data-table>
     </v-card-text>
   </v-card>
 
   <v-dialog v-model="dialog" max-width="640">
-    <v-card :subtitle="`${isEditing ? 'Update' : 'Create'} a plank SKU`" :title="`${isEditing ? 'Edit' : 'Add'} Plank`">
+    <v-card :subtitle="`${isEditing ? 'Update' : 'Create'} a plank SKU`" :title="`${isEditing ? 'Edit' : 'Add'} Plank`" @keydown.enter.prevent="save" @keydown.esc.prevent="dialog = false">
       <template #text>
         <v-row>
           <v-col cols="12" sm="3">
@@ -90,6 +94,7 @@
       <v-card-actions class="bg-surface-light">
         <v-btn text="Cancel" variant="plain" @click="dialog = false" />
         <v-spacer />
+        <v-btn v-if="!isEditing" text="Save & add another" variant="tonal" @click="saveAndAddAnother" />
         <v-btn text="Save" @click="save" />
       </v-card-actions>
     </v-card>
@@ -114,15 +119,16 @@
 
   const store = usePlannerStore()
   const ui = useUiStore()
+  const loading = computed(() => store.computeLoading)
 
   const headers = [
-    { title: 'Width (mm)', key: 'widthMm' },
-    { title: 'Length (mm)', key: 'lengthMm' },
-    { title: 'Price', key: 'pricePerPiece' },
-    { title: 'Avail', key: 'availablePieces' },
+    { title: 'Width', key: 'widthMm', align: 'end' as const },
+    { title: 'Length', key: 'lengthMm', align: 'end' as const },
+    { title: 'Unit Price', key: 'pricePerPiece', align: 'end' as const },
+    { title: 'Avail', key: 'availablePieces', align: 'end' as const },
     { title: 'Article', key: 'articleNr' },
-    { title: '', key: 'actions', sortable: false },
-  ]
+    { title: '', key: 'actions', sortable: false, width: 52 },
+  ] as const
 
   const rows = computed(() => store.sortedAvailablePlanks.map((p, i) => ({
     ...p,
@@ -146,7 +152,7 @@
 
   function resetForm (): void {
     form.widthMm = ui.lastWidthMm ?? 100
-    form.lengthMm = 1000
+    form.lengthMm = ui.lastLengthMm ?? 1000
     form.pricePerPiece = 10
     form.articleNr = ''
     form.availablePieces = null
@@ -198,7 +204,38 @@
       store.addPlank(payload)
     }
     ui.setLastWidthMm(payload.widthMm)
+    ui.setLastLengthMm(payload.lengthMm)
     dialog.value = false
+  }
+
+  function saveAndAddAnother (): void {
+    const availablePiecesValue: number | null = ((form.availablePieces === null) || (form.availablePieces === undefined) || ((form.availablePieces as unknown) === ''))
+      ? null
+      : Number(form.availablePieces)
+
+    const errors = validatePlankSKU({
+      widthMm: Number(form.widthMm),
+      lengthMm: Number(form.lengthMm),
+      pricePerPiece: Number(form.pricePerPiece),
+      articleNr: form.articleNr ? String(form.articleNr) : null,
+      availablePieces: availablePiecesValue,
+    })
+    if (errors.length > 0) return
+
+    const payload = {
+      widthMm: Number(form.widthMm),
+      lengthMm: Number(form.lengthMm),
+      pricePerPiece: Number(form.pricePerPiece),
+      articleNr: form.articleNr ? String(form.articleNr) : null,
+      availablePieces: availablePiecesValue,
+    }
+
+    // Always add a new plank when using "add another"
+    store.addPlank(payload)
+    ui.setLastWidthMm(payload.widthMm)
+    ui.setLastLengthMm(payload.lengthMm)
+    resetForm()
+    dialog.value = true
   }
 
   const widthErrors = computed(() => (form.widthMm > 0 ? [] : ['Must be > 0']))

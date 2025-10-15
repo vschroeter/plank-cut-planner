@@ -1,26 +1,22 @@
 <template>
   <v-card class="fill-card">
-    <v-card-title class="d-flex align-center">
-      <span>Required Pieces</span>
+    <v-toolbar class="sticky-header" density="compact" flat>
+      <v-toolbar-title>Required Pieces</v-toolbar-title>
       <v-spacer />
       <v-btn
-        border
-        class="mx-2"
+        class="mx-1"
         icon="mdi-delete-sweep"
-        rounded="lg"
         :title="'Clear All Pieces'"
+        variant="text"
         @click="confirmClear = true"
       />
-      <v-btn
-        border
-        icon="mdi-plus"
-        rounded="lg"
-        :title="'Add Piece'"
-        @click="add"
-      />
-    </v-card-title>
+      <v-btn icon="mdi-plus" :title="'Add Piece'" variant="text" @click="add" />
+    </v-toolbar>
+    <v-divider />
     <v-card-text>
+      <v-skeleton-loader v-if="loading" class="rounded-xl" type="table" />
       <v-data-table
+        v-else
         density="compact"
         :headers="headers"
         hide-default-footer
@@ -28,18 +24,26 @@
         :items="rows"
         :items-per-page="-1"
       >
+        <template #item.widthMm="{ value, item }"><div @dblclick="edit(item)"><v-chip label>{{ value }} mm</v-chip></div></template>
+        <template #item.lengthMm="{ value, item }"><div @dblclick="edit(item)"><v-chip label>{{ value }} mm</v-chip></div></template>
+        <template #item.quantity="{ value, item }"><div class="text-right font-mono" @dblclick="edit(item)">{{ value }}</div></template>
+        <template #item.comment="{ value, item }"><div @dblclick="edit(item)">{{ value }}</div></template>
         <template #item.actions="{ item }">
-          <div class="d-flex ga-2 justify-end">
-            <v-icon color="medium-emphasis" icon="mdi-pencil" size="small" @click="edit(item)" />
-            <v-icon color="medium-emphasis" icon="mdi-delete" size="small" @click="removeByIndex(item._idx)" />
-          </div>
+          <v-menu>
+            <template #activator="{ props }"><v-btn icon="mdi-dots-vertical" v-bind="props" variant="text" /></template>
+            <v-list density="compact">
+              <v-list-item prepend-icon="mdi-pencil" title="Edit" @click="edit(item)" />
+              <v-list-item prepend-icon="mdi-content-copy" title="Duplicate" @click="dup(item)" />
+              <v-list-item prepend-icon="mdi-delete" title="Delete" @click="removeByIndex(item._idx)" />
+            </v-list>
+          </v-menu>
         </template>
       </v-data-table>
     </v-card-text>
   </v-card>
 
   <v-dialog v-model="dialog" max-width="640">
-    <v-card :subtitle="`${isEditing ? 'Update' : 'Create'} a required piece`" :title="`${isEditing ? 'Edit' : 'Add'} Piece`">
+    <v-card :subtitle="`${isEditing ? 'Update' : 'Create'} a required piece`" :title="`${isEditing ? 'Edit' : 'Add'} Piece`" @keydown.enter.prevent="save" @keydown.esc.prevent="dialog = false">
       <template #text>
         <v-row>
           <v-col cols="12" sm="3">
@@ -78,6 +82,7 @@
       <v-card-actions class="bg-surface-light">
         <v-btn text="Cancel" variant="plain" @click="dialog = false" />
         <v-spacer />
+        <v-btn v-if="!isEditing" text="Save & add another" variant="tonal" @click="saveAndAddAnother" />
         <v-btn text="Save" @click="save" />
       </v-card-actions>
     </v-card>
@@ -102,20 +107,26 @@
 
   const store = usePlannerStore()
   const ui = useUiStore()
+  const loading = computed(() => store.computeLoading)
 
   const headers = [
-    { title: 'Width (mm)', key: 'widthMm' },
-    { title: 'Length (mm)', key: 'lengthMm' },
-    { title: 'Qty', key: 'quantity' },
+    { title: 'Width', key: 'widthMm', align: 'end' as const },
+    { title: 'Length', key: 'lengthMm', align: 'end' as const },
+    { title: 'Qty', key: 'quantity', align: 'end' as const },
     { title: 'Comment', key: 'comment' },
-    { title: '', key: 'actions', sortable: false },
-  ]
+    { title: '', key: 'actions', sortable: false, width: 52 },
+  ] as const
 
-  const rows = computed(() => store.requiredPieces.map((p, i) => ({
-    ...p,
-    key: `${p.widthMm}-${p.lengthMm}-${i}`,
-    _idx: i,
-  })))
+  const rows = computed(() => store.requiredPieces
+    .toSorted((a, b) => a.widthMm - b.widthMm || a.lengthMm - b.lengthMm)
+    .map(p => {
+      const originalIndex = store.requiredPieces.indexOf(p)
+      return {
+        ...p,
+        key: `${p.widthMm}-${p.lengthMm}-${originalIndex}`,
+        _idx: originalIndex,
+      }
+    }))
 
   const dialog = ref(false)
   const isEditing = ref(false)
@@ -131,7 +142,7 @@
 
   function resetForm (): void {
     form.widthMm = ui.lastWidthMm ?? 100
-    form.lengthMm = 400
+    form.lengthMm = ui.lastLengthMm ?? 400
     form.quantity = 1
     form.comment = ''
   }
@@ -141,6 +152,15 @@
     editIndex.value = null
     resetForm()
     dialog.value = true
+  }
+
+  function dup (row: any): void {
+    store.addRequiredPiece({
+      widthMm: row.widthMm,
+      lengthMm: row.lengthMm,
+      quantity: row.quantity,
+      comment: row.comment ?? null,
+    })
   }
 
   function edit (row: any): void {
@@ -174,7 +194,31 @@
       store.addRequiredPiece(payload)
     }
     ui.setLastWidthMm(payload.widthMm)
+    ui.setLastLengthMm(payload.lengthMm)
     dialog.value = false
+  }
+
+  function saveAndAddAnother (): void {
+    const errors = validateRequiredPiece({
+      widthMm: Number(form.widthMm),
+      lengthMm: Number(form.lengthMm),
+      quantity: Number(form.quantity),
+    })
+    if (errors.length > 0) return
+
+    const payload = {
+      widthMm: Number(form.widthMm),
+      lengthMm: Number(form.lengthMm),
+      quantity: Number(form.quantity),
+      comment: form.comment || null,
+    }
+
+    // Always add a new piece when using "add another"
+    store.addRequiredPiece(payload)
+    ui.setLastWidthMm(payload.widthMm)
+    ui.setLastLengthMm(payload.lengthMm)
+    resetForm()
+    dialog.value = true
   }
 
   function removeByIndex (index: number): void {
@@ -200,5 +244,10 @@
 .fill-card :deep(.v-card-text) {
   flex: 1;
   overflow: auto;
+}
+.sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
 }
 </style>
