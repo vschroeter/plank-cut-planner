@@ -4,6 +4,7 @@
       <v-toolbar-title>Plank Cut Planner</v-toolbar-title>
       <v-spacer />
       <v-btn icon="mdi-download" :title="'Export JSON'" @click="onExport" />
+      <v-btn icon="mdi-file-document-outline" :title="'Export Markdown'" @click="onExportMarkdown" />
       <v-btn icon="mdi-upload" :title="'Import JSON'" @click="triggerImport" />
       <input
         ref="importInput"
@@ -71,6 +72,7 @@
   import GlobalSettingsCard from '@/components/GlobalSettingsCard.vue'
   import PurchasePlanTable from '@/components/PurchasePlanTable.vue'
   import RequiredPiecesTable from '@/components/RequiredPiecesTable.vue'
+  import { buildCutPlanMarkdown } from '@/lib/exportMarkdown'
   import { usePlannerStore } from '@/stores/planner'
   const store = usePlannerStore()
 
@@ -86,6 +88,22 @@
     const a = document.createElement('a')
     a.href = url
     a.download = 'plank-planner.json'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+  function onExportMarkdown (): void {
+    const md = buildCutPlanMarkdown(store.plankPlan, store.requiredPieces, store.settings.unitSystem)
+    const blob = new Blob([md], { type: 'text/markdown' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    const ts = new Date()
+    const y = ts.getFullYear().toString()
+    const m = String(ts.getMonth() + 1).padStart(2, '0')
+    const d = String(ts.getDate()).padStart(2, '0')
+    const hh = String(ts.getHours()).padStart(2, '0')
+    const mm = String(ts.getMinutes()).padStart(2, '0')
+    a.href = url
+    a.download = `cut-plan-${y}${m}${d}-${hh}${mm}.md`
     a.click()
     URL.revokeObjectURL(url)
   }

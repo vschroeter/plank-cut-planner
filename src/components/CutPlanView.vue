@@ -66,7 +66,12 @@
     widthReference.value = entries[0]?.contentRect.width ?? 0
   })
 
-  const planks = computed(() => store.plankPlan)
+  const planks = computed(() => [...store.plankPlan].toSorted((a, b) => {
+    if (a.widthMm === b.widthMm) {
+      return b.lengthMm - a.lengthMm
+    }
+    return a.widthMm - b.widthMm
+  }))
   const maxPlankLength = computed(() => Math.max(...planks.value.map(plank => plank.lengthMm)))
 
   watch(planks, () => {

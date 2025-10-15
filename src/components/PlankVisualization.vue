@@ -5,7 +5,7 @@
 
       <!-- Child divs absolutely positioned at same vertical level -->
       <div
-        v-for="(piece, idx) in plank.pieces"
+        v-for="(piece, idx) in [...plank.pieces].toSorted((a, b) => (b.widthMm - a.widthMm) || (b.lengthMm - a.lengthMm))"
         :key="idx"
         class="plank-piece"
         :class="{ done: isPieceDone(piece, idx) }"
