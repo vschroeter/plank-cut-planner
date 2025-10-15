@@ -1,18 +1,73 @@
 <template>
-  <v-app-bar density="compact" flat>
+  <v-app-bar class="bg-surface-2" density="compact" flat>
+    <!-- Links group -->
+    <div class="d-flex align-center">
+      <v-tooltip location="bottom" :open-delay="1000" text="GitHub repository">
+        <template #activator="{ props: tprops }">
+          <v-btn
+            aria-label="GitHub repository"
+            href="https://github.com/vschroeter/plank-cut-planner"
+            icon
+            rel="noopener"
+            target="_blank"
+            v-bind="tprops"
+            variant="text"
+          >
+            <v-icon icon="mdi-github" />
+          </v-btn>
+        </template>
+      </v-tooltip>
+    </div>
+    <v-spacer />
     <v-app-bar-title>Plank Cut Planner</v-app-bar-title>
     <v-spacer />
-    <v-btn icon="mdi-download" :title="'Export JSON'" variant="text" @click="onExport" />
-    <v-btn icon="mdi-file-document-outline" :title="'Export Markdown'" variant="text" @click="onExportMarkdown" />
-    <v-btn icon="mdi-upload" :title="'Import JSON'" variant="text" @click="triggerImport" />
-    <input
-      ref="importInput"
-      accept="application/json,.json"
-      style="display:none"
-      type="file"
-      @change="onImport"
-    >
-    <v-btn icon="mdi-cog-outline" variant="text" @click="settingsDialogOpen = true" />
+    <div class="d-flex align-center">
+      <!-- Import/Export group -->
+      <div class="d-flex align-center">
+        <v-tooltip location="bottom" :open-delay="400" text="Export data (JSON)">
+          <template #activator="{ props: tprops }">
+            <v-btn
+              icon="mdi-download"
+              v-bind="tprops"
+              :open-delay="700"
+              variant="text"
+              @click="onExport"
+            />
+          </template>
+        </v-tooltip>
+        <v-tooltip location="bottom" :open-delay="400" text="Export cut plan (Markdown)">
+          <template #activator="{ props: tprops }">
+            <v-btn icon="mdi-file-document-outline" variant="text" v-bind="tprops" @click="onExportMarkdown" />
+          </template>
+        </v-tooltip>
+        <v-tooltip location="bottom" :open-delay="400" text="Import data (JSON)">
+          <template #activator="{ props: tprops }">
+            <v-btn icon="mdi-upload" variant="text" v-bind="tprops" @click="triggerImport" />
+          </template>
+        </v-tooltip>
+        <input
+          ref="importInput"
+          accept="application/json,.json"
+          style="display:none"
+          type="file"
+          @change="onImport"
+        >
+      </div>
+
+      <v-divider class="mx-2" vertical />
+
+      <!-- Settings group -->
+      <div class="d-flex align-center">
+        <v-tooltip location="bottom" text="Settings">
+          <template #activator="{ props: tprops }">
+            <v-btn icon="mdi-cog-outline" variant="text" v-bind="tprops" @click="settingsDialogOpen = true" />
+          </template>
+        </v-tooltip>
+      </div>
+
+      <v-divider class="mx-2" vertical />
+
+    </div>
   </v-app-bar>
 
   <!-- Settings Dialog -->
