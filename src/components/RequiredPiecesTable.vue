@@ -39,6 +39,9 @@
           </v-menu>
         </template>
       </v-data-table>
+      <div class="text-center my-2">
+        <v-btn color="primary" prepend-icon="mdi-plus" @click="add">Add Piece</v-btn>
+      </div>
     </v-card-text>
   </v-card>
 

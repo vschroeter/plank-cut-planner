@@ -1,5 +1,5 @@
 /* eslint-disable unicorn/prefer-single-call */
-import type { Plank, RequiredPieceInput } from '@/types/planner'
+import type { Plank, PurchasePlanItem, RequiredPieceInput } from '@/types/planner'
 import { formatLength } from '@/composables/useUnits'
 
 function rects (count: number, groupAt = 5): string {
@@ -56,5 +56,29 @@ export function buildCutPlanMarkdown (planks: Plank[], required: RequiredPieceIn
     lines.push(`${g.count} x ${fmtPiece(g.lengthMm, g.widthMm, unit)} ${rects(g.count)}`)
   }
 
+  return lines.join('\n')
+}
+
+export function buildPurchasePlanMarkdown (items: PurchasePlanItem[], unit: 'mm' | 'inch', currencySymbol: string): string {
+  const lines: string[] = []
+  lines.push('# Purchase Plan')
+  lines.push('')
+  if (items.length === 0) {
+    lines.push('_No items to purchase._')
+    return lines.join('\n')
+  }
+  const sorted = [...items].toSorted((a, b) => (b.plank.widthMm - a.plank.widthMm) || (b.plank.lengthMm - a.plank.lengthMm))
+  let total = 0
+  for (const item of sorted) {
+    const sku = item.plank.availablePlank
+    const pieceFmt = fmtPiece(item.plank.lengthMm, item.plank.widthMm, unit)
+    const unitPrice = sku.pricePerPiece
+    const subtotal = unitPrice * item.quantity
+    total += subtotal
+    const article = sku.articleNr ? ` • ${sku.articleNr}` : ''
+    lines.push(`- ${item.quantity} × ${pieceFmt} • ${currencySymbol}${unitPrice.toFixed(2)} each • subtotal ${currencySymbol}${subtotal.toFixed(2)}${article}`)
+  }
+  lines.push('')
+  lines.push(`**Total: ${currencySymbol}${total.toFixed(2)}**`)
   return lines.join('\n')
 }

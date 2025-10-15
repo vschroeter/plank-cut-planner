@@ -4,6 +4,12 @@
       <v-toolbar-title>Purchase Plan</v-toolbar-title>
       <v-spacer />
       <v-chip color="info" label>Total: {{ formatCurrency(total, store.settings.currency) }}</v-chip>
+      <v-divider class="mx-2" vertical />
+      <v-tooltip location="bottom" text="Export purchase plan (Markdown)">
+        <template #activator="{ props: tprops }">
+          <v-btn icon="mdi-file-document-outline" variant="text" v-bind="tprops" @click="onExportMarkdown" />
+        </template>
+      </v-tooltip>
     </v-toolbar>
     <v-divider />
     <v-card-text>
@@ -23,6 +29,7 @@
 
 <script lang="ts" setup>
   import { computed } from 'vue'
+  import { buildPurchasePlanMarkdown } from '@/lib/exportMarkdown'
   import { formatCurrency } from '@/lib/format'
   import { usePlannerStore } from '@/stores/planner'
   const store = usePlannerStore()
@@ -52,6 +59,23 @@
   const total = computed(() => store.purchasePlan.reduce((s, item) => s + item.quantity * item.plank.availablePlank.pricePerPiece, 0))
   const loading = computed(() => store.computeLoading)
   defineExpose({ formatCurrency })
+
+  function onExportMarkdown (): void {
+    const md = buildPurchasePlanMarkdown(store.purchasePlan, store.settings.unitSystem, store.settings.currency)
+    const blob = new Blob([md], { type: 'text/markdown' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    const ts = new Date()
+    const y = ts.getFullYear().toString()
+    const m = String(ts.getMonth() + 1).padStart(2, '0')
+    const d = String(ts.getDate()).padStart(2, '0')
+    const hh = String(ts.getHours()).padStart(2, '0')
+    const mm = String(ts.getMinutes()).padStart(2, '0')
+    a.href = url
+    a.download = `purchase-plan-${y}${m}${d}-${hh}${mm}.md`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
 </script>
 
 <style scoped>

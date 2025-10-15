@@ -1,24 +1,87 @@
 <template>
   <v-card>
-    <v-toolbar class="sticky-header" density="compact" flat>
+    <v-toolbar class="sticky-header bg-surface-2" density="compact" flat>
       <v-toolbar-title>Cut Plan</v-toolbar-title>
       <v-spacer />
-      <v-chip color="info" label>cuts: {{ store.totalCuts }}</v-chip>
-      <v-chip v-if="planks.length > 0" class="ml-2" color="success" label>waste: {{ wastePercentTotal }}%</v-chip>
-      <v-btn icon="mdi-restore" :title="'Reset marked pieces'" variant="text" @click="store.resetAllDone()" />
+
+      <!-- Metrics group -->
+      <div class="d-flex align-center">
+        <v-chip color="info" label>cuts: {{ store.totalCuts }}</v-chip>
+        <v-chip v-if="planks.length > 0" class="ml-2" color="success" label>waste: {{ wastePercentTotal }}%</v-chip>
+      </div>
+
+      <v-divider class="mx-2" vertical />
+
+      <!-- Status group -->
+      <div class="d-flex align-center text-caption">
+        <v-icon class="mr-1" icon="mdi-clock-outline" size="small" />
+        <span>{{ statusText }}</span>
+      </div>
+
+      <v-divider class="mx-2" vertical />
+
+      <!-- Actions group -->
+      <div class="d-flex align-center">
+        <v-tooltip location="bottom" text="Auto recompute when data changes">
+          <template #activator="{ props: tprops }">
+            <v-switch
+              v-model="auto"
+              density="comfortable"
+              hide-details
+              inset
+              label="Auto"
+              v-bind="tprops"
+            />
+          </template>
+        </v-tooltip>
+        <v-tooltip location="bottom" text="Compute now">
+          <template #activator="{ props: tprops }">
+            <v-btn
+              class="ml-2"
+              color="primary"
+              :disabled="store.autoRecompute"
+              :loading="store.computeLoading"
+              prepend-icon="mdi-cpu-64-bit"
+              variant="elevated"
+              v-bind="tprops"
+              @click="store.computePlans()"
+            >Compute</v-btn>
+          </template>
+        </v-tooltip>
+
+        <v-tooltip location="bottom" text="Export cut plan (Markdown)">
+          <template #activator="{ props: tprops }">
+            <v-btn
+              class="ml-2"
+              icon="mdi-file-document-outline"
+              variant="text"
+              v-bind="tprops"
+              @click="onExportMarkdown"
+            />
+          </template>
+        </v-tooltip>
+
+        <v-divider class="mx-2" vertical />
+
+        <v-tooltip location="bottom" text="Reset all marked pieces">
+          <template #activator="{ props: tprops }">
+            <v-btn icon="mdi-restore" variant="text" v-bind="tprops" @click="store.resetAllDone()" />
+          </template>
+        </v-tooltip>
+      </div>
     </v-toolbar>
     <v-divider />
     <v-card-text ref="refCardContent">
 
-      <v-row v-for="plank, idx in planks" :key="idx" class="py-2">
+      <v-row v-for="meta in planksWithIndex" :key="meta.originalIndex" class="py-2">
         <v-col>
           <div class="d-flex align-center mb-2">
-            <v-chip v-if="plank.availablePlank.articleNr" class="mr-2" label>{{ plank.availablePlank.articleNr }}</v-chip>
-            <v-chip class="mr-2" label>{{ plank.lengthMm }} × {{ plank.widthMm }} mm</v-chip>
+            <v-chip v-if="meta.plank.availablePlank.articleNr" class="mr-2" label>{{ meta.plank.availablePlank.articleNr }}</v-chip>
+            <v-chip class="mr-2" label>{{ meta.plank.lengthMm }} × {{ meta.plank.widthMm }} mm</v-chip>
             <v-chip class="mr-2" color="secondary" label variant="tonal">kerf: {{ store.settings.sawKerfMm }} mm</v-chip>
-            <v-chip color="warning" label variant="tonal">waste: {{ wastePercent(plank) }}%</v-chip>
+            <v-chip color="warning" label variant="tonal">waste: {{ wastePercent(meta.plank) }}%</v-chip>
           </div>
-          <PlankVisualization :max-plank-length="maxPlankLength" :plank="plank" :plank-idx="idx" :width-reference="widthReference" />
+          <PlankVisualization :max-plank-length="maxPlankLength" :plank="meta.plank" :plank-idx="meta.originalIndex" :width-reference="widthReference" />
         </v-col>
       </v-row>
 
@@ -58,6 +121,7 @@
 
 <script lang="ts" setup>
   import { useResizeObserver } from '@vueuse/core'
+  import { buildCutPlanMarkdown } from '@/lib/exportMarkdown'
   import { usePlannerStore } from '@/stores/planner'
   import PlankVisualization from './PlankVisualization.vue'
   const store = usePlannerStore()
@@ -69,17 +133,32 @@
     widthReference.value = entries[0]?.contentRect.width ?? 0
   })
 
-  const planks = computed(() => [...store.plankPlan].toSorted((a, b) => {
-    if (a.widthMm === b.widthMm) {
-      return b.lengthMm - a.lengthMm
-    }
-    return a.widthMm - b.widthMm
-  }))
-  const maxPlankLength = computed(() => Math.max(...planks.value.map(plank => plank.lengthMm)))
+  function pieceIdentityFor (originalIndex: number, plank: any, piece: any, pieceIdx: number): string {
+    const art = plank.availablePlank.articleNr ?? 'na'
+    return `${originalIndex}:${art}:${piece.widthMm}x${piece.lengthMm}:${pieceIdx}:${piece.offsetMm}`
+  }
 
-  watch(planks, () => {
-    console.log(planks.value)
+  function isPlankFinished (plank: any, originalIndex: number): boolean {
+    const piecesSorted = [...plank.pieces].toSorted((a, b) => (b.widthMm - a.widthMm) || (b.lengthMm - a.lengthMm))
+    if (piecesSorted.length === 0) return false
+    return piecesSorted.every((piece, idx) => !!store.donePieces[pieceIdentityFor(originalIndex, plank, piece, idx)])
+  }
+
+  const planksWithIndex = computed(() => {
+    const metas = store.plankPlan.map((plank: any, originalIndex: number) => ({
+      plank,
+      originalIndex,
+      finished: isPlankFinished(plank, originalIndex),
+    }))
+    return metas.toSorted((a, b) => {
+      if (a.finished !== b.finished) return Number(a.finished) - Number(b.finished) // unfinished first
+      if (a.plank.widthMm === b.plank.widthMm) return b.plank.lengthMm - a.plank.lengthMm
+      return a.plank.widthMm - b.plank.widthMm
+    })
   })
+
+  const planks = computed(() => planksWithIndex.value.map(m => m.plank))
+  const maxPlankLength = computed(() => Math.max(...planks.value.map(plank => plank.lengthMm)))
 
   function wastePercent (plank: any): number {
     const used = plank.pieces.reduce((s: number, p: any) => s + p.lengthMm + p.cutWidthMm, 0)
@@ -93,6 +172,35 @@
     if (totalLen === 0) return 0
     return Math.round(((totalLen - used) / totalLen) * 100)
   })
+
+  const statusText = computed(() => {
+    const ms = store.computeMs ?? null
+    const last = store.lastComputedAt ? new Date(store.lastComputedAt).toLocaleTimeString() : '—'
+    const perf = ms == null ? 'Not computed yet' : `Last ${ms}ms @ ${last}`
+    return store.autoRecompute ? perf : `${perf} • Auto disabled (>1.0s)`
+  })
+
+  const auto = computed({
+    get: () => store.autoRecompute,
+    set: (v: boolean) => store.toggleAutoRecompute(v),
+  })
+
+  function onExportMarkdown (): void {
+    const md = buildCutPlanMarkdown(store.plankPlan, store.requiredPieces, store.settings.unitSystem)
+    const blob = new Blob([md], { type: 'text/markdown' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    const ts = new Date()
+    const y = ts.getFullYear().toString()
+    const m = String(ts.getMonth() + 1).padStart(2, '0')
+    const d = String(ts.getDate()).padStart(2, '0')
+    const hh = String(ts.getHours()).padStart(2, '0')
+    const mm = String(ts.getMinutes()).padStart(2, '0')
+    a.href = url
+    a.download = `cut-plan-${y}${m}${d}-${hh}${mm}.md`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
 
 </script>
 <style scoped>
