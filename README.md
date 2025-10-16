@@ -2,7 +2,9 @@
 
 # Plank Cut Planner
 
-Plan the shopping list of wooden planks based on store availability and your required pieces. The app computes a purchase plan and a cut plan that aim to minimize cost and waste.
+Plan the shopping list of wooden planks based on store availability and your required pieces. The app computes an optimized purchase plan and a cut plan that aim to minimize cost and waste.
+
+App available at [vschroeter.github.io/plank-cut-planner/](https://github.com/vschroeter/plank-cut-planner.git)
 
 </div>
 
@@ -48,7 +50,7 @@ pnpm install
 pnpm dev
 ```
 
-Vite will print the local URL (typically `http://localhost:5173`).
+Vite will print the local URL (typically `http://localhost:3000`).
 
 ### Build and preview
 
@@ -84,35 +86,10 @@ pnpm type-check  # vue-tsc project check
    - Toolbar actions: Export JSON (download icon), Export Markdown (document icon), Import JSON (upload icon).
    - JSON lets you save and restore all tables and settings.
    - Markdown exports a printable cut‑plan summary.
-
+<!-- 
 ## How it works (high level)
 
 - Cuts are orthogonal to the plank’s long side (length); pieces are not rotated 90°.
 - Saw kerf is inserted between sequential cuts.
 - The solver searches feasible assignments, optimizing for cost and waste with tie‑breakers: fewest cuts, then fewest purchased planks.
-- Errors (e.g., unsatisfiable inputs) are shown as alerts above the tables.
-
-## Tech stack
-
-- Vue 3 + TypeScript, Vite, Vuetify 3
-- State: Pinia (persisted to `localStorage`)
-- Router: Vue Router
-- Tests: Vitest + Vue Test Utils + jsdom
-
-## Project scripts
-
-```bash
-pnpm dev
-pnpm build
-pnpm preview
-pnpm test
-pnpm test:watch
-pnpm lint
-pnpm type-check
-```
-
-## Specs and notes
-
-- See `specs/001-material-planning-web/quickstart.md` for a short project overview
-- See `specs/001-material-planning-web/spec.md` and `specs/001-material-planning-web/tasks.md` for functional details and roadmap
-
+- Errors (e.g., unsatisfiable inputs) are shown as alerts above the tables. -->

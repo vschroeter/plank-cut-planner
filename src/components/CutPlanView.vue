@@ -183,7 +183,7 @@
   const statusText = computed(() => {
     const ms = store.computeMs ?? null
     const last = store.lastComputedAt ? new Date(store.lastComputedAt).toLocaleTimeString() : '—'
-    const perf = ms == null ? 'Not computed yet' : `Last ${ms}ms @ ${last}`
+    const perf = ms == null ? 'Not computed yet' : `${ms}ms`
     return store.autoRecompute ? perf : `${perf} • Auto disabled (>1.0s)`
   })
 

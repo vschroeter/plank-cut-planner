@@ -135,8 +135,8 @@
     <v-row dense>
       <v-col cols="12" lg="6">
         <v-row dense>
-          <v-col cols="12" lg="6"><RequiredPiecesTable /></v-col>
-          <v-col cols="12" lg="6"><AvailablePlanksTable /></v-col>
+          <v-col cols="12" xl="6"><RequiredPiecesTable /></v-col>
+          <v-col cols="12" xl="6"><AvailablePlanksTable /></v-col>
           <v-col class="mt-3" cols="12"><PurchasePlanTable /></v-col>
         </v-row>
       </v-col>

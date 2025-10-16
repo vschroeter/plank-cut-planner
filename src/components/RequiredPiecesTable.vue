@@ -194,10 +194,10 @@
     const tableEl = refTableWrap.value.querySelector('table') as HTMLTableElement | null
     const thead = tableEl?.querySelector('thead') as HTMLElement | null
     const firstRow = tableEl?.querySelector('tbody tr') as HTMLElement | null
-    const headerHeight = thead?.getBoundingClientRect().height ?? 0
-    const rowHeight = firstRow?.getBoundingClientRect().height ?? 40
+    const headerHeight = thead?.getBoundingClientRect?.()?.height ?? 0
+    const rowHeight = firstRow?.getBoundingClientRect?.()?.height ?? 40
     const minHeight = Math.ceil(headerHeight + rowHeight * 5)
-    const contentHeight = Math.ceil(refCardText.value.getBoundingClientRect().height)
+    const contentHeight = Math.ceil(refCardText.value.getBoundingClientRect?.()?.height ?? 0)
     if (Number.isFinite(minHeight) && minHeight > 0) ui.syncedTablesMinPx = minHeight
     if (Number.isFinite(contentHeight) && contentHeight > 0) ui.syncedTablesMaxPx = contentHeight
   }

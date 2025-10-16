@@ -38,17 +38,14 @@
       </v-tooltip>
       <v-tooltip location="bottom" open-delay="500" text="Add Plank">
         <template #activator="{ props }">
-          <v-btn
-            icon="mdi-plus"
-            variant="text"
-            v-bind="props"
-            @click="add"
-          />
+          <v-btn icon="mdi-plus" variant="text" v-bind="props" @click="add" />
         </template>
       </v-tooltip>
     </v-toolbar>
     <v-divider />
-    <v-card-text :style="{ minHeight: ui.syncedTablesMinPx ? (ui.syncedTablesMinPx + 'px') : undefined, maxHeight: ui.syncedTablesMaxPx ? (ui.syncedTablesMaxPx + 'px') : undefined }">
+    <v-card-text
+      :style="{ minHeight: ui.syncedTablesMinPx ? (ui.syncedTablesMinPx + 'px') : undefined, maxHeight: ui.syncedTablesMaxPx ? (ui.syncedTablesMaxPx + 'px') : undefined }"
+    >
       <input
         ref="refFile"
         accept=".csv,text/csv"
@@ -66,11 +63,23 @@
         :items="rows"
         :items-per-page="-1"
       >
-        <template #item.widthMm="{ value, item }"><div @dblclick="edit(item)"><v-chip label>{{ value }} mm</v-chip></div></template>
-        <template #item.lengthMm="{ value, item }"><div @dblclick="edit(item)"><v-chip label>{{ value }} mm</v-chip></div></template>
-        <template #item.pricePerPiece="{ value, item }"><div @dblclick="edit(item)"><v-chip color="primary" label variant="tonal">{{ value.toFixed(2) }} {{ store.settings.currency }}</v-chip></div></template>
-        <template #item.availablePieces="{ value, item }"><div @dblclick="edit(item)"><v-chip :color="value === null ? 'info' : 'success'" label variant="tonal">{{ value ?? '∞' }}</v-chip></div></template>
-        <template #item.articleNr="{ value, item }"><div @dblclick="edit(item)">{{ value }}</div></template>
+        <template #item.widthMm="{ value, item }">
+          <div @dblclick="edit(item)"><v-chip label>{{ value }} mm</v-chip></div>
+        </template>
+        <template #item.lengthMm="{ value, item }">
+          <div @dblclick="edit(item)"><v-chip label>{{ value }} mm</v-chip></div>
+        </template>
+        <template #item.pricePerPiece="{ value, item }">
+          <div @dblclick="edit(item)"><v-chip color="primary" label variant="tonal">{{ value.toFixed(2) }} {{
+            store.settings.currency }}</v-chip></div>
+        </template>
+        <template #item.availablePieces="{ value, item }">
+          <div @dblclick="edit(item)"><v-chip :color="value === null ? 'info' : 'success'" label variant="tonal">{{
+            value ?? '∞' }}</v-chip></div>
+        </template>
+        <template #item.articleNr="{ value, item }">
+          <div @dblclick="edit(item)">{{ value }}</div>
+        </template>
         <template #item.actions="{ item }">
           <v-menu>
             <template #activator="{ props }"><v-btn icon="mdi-dots-vertical" v-bind="props" variant="text" /></template>
@@ -88,7 +97,12 @@
   </v-card>
 
   <v-dialog v-model="dialog" max-width="640">
-    <v-card :subtitle="`${isEditing ? 'Update' : 'Create'} a plank SKU`" :title="`${isEditing ? 'Edit' : 'Add'} Plank`" @keydown.enter.prevent="save" @keydown.esc.prevent="dialog = false">
+    <v-card
+      :subtitle="`${isEditing ? 'Update' : 'Create'} a plank SKU`"
+      :title="`${isEditing ? 'Edit' : 'Add'} Plank`"
+      @keydown.enter.prevent="save"
+      @keydown.esc.prevent="dialog = false"
+    >
       <template #text>
         <v-row>
           <v-col cols="12" sm="3">
@@ -169,6 +183,10 @@
   const store = usePlannerStore()
   const ui = useUiStore()
   const loading = computed(() => store.computeLoading)
+
+  onMounted(() => {
+    console.log('AvailablePlanksTable mounted', store.plankPlan)
+  })
 
   const headers = [
     { title: 'Width', key: 'widthMm', align: 'end' as const },
@@ -366,6 +384,7 @@
   display: flex;
   flex-direction: column;
 }
+
 .fill-card :deep(.v-card-text) {
   flex: 1;
   overflow: auto;
