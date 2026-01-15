@@ -86,6 +86,18 @@ pnpm type-check  # vue-tsc project check
    - Toolbar actions: Export JSON (download icon), Export Markdown (document icon), Import JSON (upload icon).
    - JSON lets you save and restore all tables and settings.
    - Markdown exports a printable cut‑plan summary.
+
+## ⚠️ Performance Warning
+
+**This problem is NP-hard** (it's a variant of the bin packing problem). The current implementation uses exact algorithms that work well for small to medium-sized inputs, but performance degrades exponentially with larger problem sizes.
+
+**Recommendation**: Keep the number of required pieces below 20 for optimal performance. For larger inputs, the computation may become slow or unresponsive.
+
+
+## TODO
+
+- [ ] Implement approximation algorithms (e.g., First Fit Decreasing, Best Fit Decreasing) for handling larger inputs efficiently
+
 <!-- 
 ## How it works (high level)
 

@@ -56,4 +56,3 @@ function resetAllDone(): void;
 ```
 
 Validation rules align with `data-model.md`.
-

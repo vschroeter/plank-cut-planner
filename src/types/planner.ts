@@ -55,6 +55,14 @@ export class Plank extends PlankDimension {
     return lengthMmLeft
   }
 
+  get wasteFraction() {
+    return this.lengthMmLeft / this.availablePlank.lengthMm
+  }
+
+  get pricePerMeter () {
+    return this.availablePlank.pricePerPiece / this.availablePlank.lengthMm
+  }
+
   get hash () {
     return this.availablePlank.hash + '(' + this.pieces.reduce((acc, p) => acc + p.lengthMm, 0) + ')'
   }

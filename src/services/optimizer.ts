@@ -20,15 +20,17 @@ class HeapNode {
   requiredPiecesLeft: PlankDimension[] = []
   planksToBePurchased: Plank[] = []
   totalPrice = 0
+  relevantPlank: Plank | null
   storage: PlankStorage
   previousNode: HeapNode | null = null
 
-  constructor ({ requiredPiecesLeft, planksToBePurchased, storage, previousNode, totalPrice }: { requiredPiecesLeft: PlankDimension[], planksToBePurchased: Plank[], storage: PlankStorage, previousNode: HeapNode | null, totalPrice: number }) {
+  constructor ({ requiredPiecesLeft, planksToBePurchased, storage, previousNode, totalPrice, relevantPlank = null }: { requiredPiecesLeft: PlankDimension[], planksToBePurchased: Plank[], storage: PlankStorage, previousNode: HeapNode | null, totalPrice: number, relevantPlank?: Plank | null }) {
     this.requiredPiecesLeft = requiredPiecesLeft
     this.planksToBePurchased = planksToBePurchased
     this.storage = storage
     this.previousNode = previousNode
     this.totalPrice = totalPrice
+    this.relevantPlank = relevantPlank
   }
 
   // get hash () {
@@ -60,6 +62,7 @@ class HeapNode {
     return new HeapNode({
       requiredPiecesLeft,
       planksToBePurchased: [...this.planksToBePurchased, plank],
+      relevantPlank: plank,
       storage: this.storage.copy().removePlank(plank),
       previousNode: this,
       totalPrice: this.totalPrice + plank.availablePlank.pricePerPiece,
@@ -322,6 +325,7 @@ export function computeOptimalPlan (input: ComputeInput): ComputeResult {
       previousNode: null,
     })
 
+    // Optimizer queue
     const queue = new Heap<HeapNode>([initialNode], {
       comparator: (a, b) => {
         if (a.totalPrice == b.totalPrice) {
@@ -331,12 +335,30 @@ export function computeOptimalPlan (input: ComputeInput): ComputeResult {
       },
     })
 
+    // const speedUp = true
+    const wasteThreshold = 0.05
+
+    // // Greedy optimizer queue
+    // const queue = new Heap<HeapNode>([initialNode], {
+    //   comparator: (a, b) => {
+    //     return a.requiredPiecesLeft.length - b.requiredPiecesLeft.length || a.totalPrice - b.totalPrice || a.planksToBePurchased.length - b.planksToBePurchased.length
+    //   },
+    // })
+
     const visited = new Set<string>()
+    const visitedWithPrices = new Map<string, number>()
 
     // return { planksToBePurchased: [] }
 
     while (queue.size > 0) {
       const currentNode = queue.poll()
+
+      if (visited.size > 250_000) {
+        errors.push('Too big problem')
+        totalUniqueVisited = visited.size
+        finalizeAndLog()
+        return { planksToBePurchased: [], errors }
+      }
 
       if (!currentNode) {
         break
@@ -355,6 +377,7 @@ export function computeOptimalPlan (input: ComputeInput): ComputeResult {
       // If we have no required pieces, we have found a solution
       if (requiredPiecesLeft.length === 0) {
         totalUniqueVisited = visited.size
+        // console.warn('SOLUTION:', visited.size)
         finalizeAndLog()
         return { planksToBePurchased: currentNode.planksToBePurchased, errors }
       }
@@ -368,6 +391,7 @@ export function computeOptimalPlan (input: ComputeInput): ComputeResult {
       }
 
       visited.add(hash)
+      visitedWithPrices.set(hash, _currentTotalCost)
       groupStats.uniqueVisited += 1
 
       const currentPiece = requiredPiecesLeft[0]!
@@ -375,23 +399,34 @@ export function computeOptimalPlan (input: ComputeInput): ComputeResult {
 
       // Create possible next nodes
       let newPlankAdds = 0
-      for (const plank of availableStorage.availablePlanks) {
+      const newNodes: HeapNode[] = []
+      for (const plank of availableStorage.availablePlanks.toSorted((a, b) => a.pricePerMeter - b.pricePerMeter)) {
         if (plank.lengthMmLeft >= currentPiece.lengthMm) {
           if (plank.widthMm == currentPiece.widthMm) {
             const nextNode = currentNode.createNextNodeWithNewPlank(plank, settings)
-            queue.add(nextNode)
+            newNodes.push(nextNode)
             newPlankAdds += 1
+
+            if (nextNode.relevantPlank?.wasteFraction < wasteThreshold) {
+              // Only keep the last node
+              newNodes.splice(0, newNodes.length - 1)
+            }
           } else if (settings.allowHalving && plank.widthMm == currentPiece.widthMm * 2) {
             const nextNode = currentNode.createNextNodeWithNewHalvePlank(plank, settings)
-            queue.add(nextNode)
+            newNodes.push(nextNode)
             newPlankAdds += 1
           }
         }
       }
+
+      for (const node of newNodes) {
+        queue.add(node)
+      }
+
       groupStats.enqueueNewPlank += newPlankAdds
 
       let existingPlankAdds = 0
-      for (const plank of currentNode.planksToBePurchased) {
+      for (const plank of currentNode.planksToBePurchased.toSorted((a, b) => a.lengthMmLeft - b.lengthMmLeft)) {
         if (plank.lengthMmLeft >= currentPiece.lengthMm && plank.widthMm == currentPiece.widthMm) {
           const nextNode = currentNode.createNextNodeWithExistingPlank(plank, settings)
           queue.add(nextNode)
