@@ -407,7 +407,7 @@ export function computeOptimalPlan (input: ComputeInput): ComputeResult {
             newNodes.push(nextNode)
             newPlankAdds += 1
 
-            if (nextNode.relevantPlank?.wasteFraction < wasteThreshold) {
+            if (nextNode.relevantPlank && (nextNode.relevantPlank?.wasteFraction < wasteThreshold)) {
               // Only keep the last node
               newNodes.splice(0, newNodes.length - 1)
             }
