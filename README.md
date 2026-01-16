@@ -6,6 +6,8 @@ Plan the shopping list of wooden planks based on store availability and your req
 
 App available at [vschroeter.github.io/plank-cut-planner/](https://github.com/vschroeter/plank-cut-planner.git)
 
+![Plank Cut Planner](./docs/Screenshot01.png)
+
 </div>
 
 ---

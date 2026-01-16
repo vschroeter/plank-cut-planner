@@ -103,16 +103,22 @@ class HeapNode {
       throw new Error('No required piece left')
     }
 
+    const copiedPlank = plank.copy()
+
     const _plankPiece = new PlankPiece({
       widthMm: currentRequiredPiece.widthMm,
       lengthMm: currentRequiredPiece.lengthMm,
       cutWidthMm: settings.sawKerfMm,
     })
-    plank.addPiece(_plankPiece)
+    copiedPlank.addPiece(_plankPiece)
+
+    const plankIndex = this.planksToBePurchased.indexOf(plank)
+    const updatedPlanksToBePurchased = [...this.planksToBePurchased]
+    updatedPlanksToBePurchased[plankIndex] = copiedPlank
 
     return new HeapNode({
       requiredPiecesLeft,
-      planksToBePurchased: this.planksToBePurchased,
+      planksToBePurchased: updatedPlanksToBePurchased,
       storage: this.storage.copy(),
       previousNode: this,
       totalPrice: this.totalPrice,
